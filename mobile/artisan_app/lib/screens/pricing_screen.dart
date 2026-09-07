@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../models/product_draft.dart';
 
 class PricingScreen extends StatelessWidget {
   const PricingScreen({super.key});
@@ -13,6 +14,12 @@ class PricingScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (currentDraft.photoBytes != null)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.memory(currentDraft.photoBytes!, height: 150, fit: BoxFit.cover, width: double.infinity),
+              ),
+            if (currentDraft.photoBytes != null) const SizedBox(height: 16),
             const Text('Suggested Range', style: TextStyle(fontSize: 16, color: Colors.grey)),
             const Text('₹1,600 – ₹1,900',
                 style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
@@ -28,7 +35,10 @@ class PricingScreen extends StatelessWidget {
               children: [
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () => context.go('/product-detail'),
+                    onPressed: () {
+                      currentDraft.priceRange = '₹1,600 – ₹1,900';
+                      context.go('/product-detail');
+                    },
                     child: const Text('Accept'),
                   ),
                 ),

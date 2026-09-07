@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:record/record.dart';
+import '../models/product_draft.dart';
 
 class AddProductScreen extends StatefulWidget {
   const AddProductScreen({super.key});
@@ -25,6 +26,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
       final bytes = await photo.readAsBytes();
       setState(() {
         _photoBytes = bytes;
+        currentDraft.photoBytes = bytes;
       });
     }
   }
@@ -35,6 +37,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
       setState(() {
         _isRecording = false;
         _audioPath = path;
+        currentDraft.audioPath = path;
       });
     } else {
       if (await _recorder.hasPermission()) {
