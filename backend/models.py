@@ -1,4 +1,6 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime, Text
+from sqlalchemy.orm import relationship
+from datetime import datetime
 from database import Base
 
 class User(Base):
@@ -9,3 +11,39 @@ class User(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
     preferred_language = Column(String, default="en")
+
+    products = relationship("Product", back_populates="owner")
+    orders = relationship("Order", back_populates="buyer")
+
+
+class Product(Base):
+    __tablename__ = "products"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, nullable=False)
+    description = Column(Text)
+    category = Column(String)
+    base_price = Column(Float, nullable=False)       # artisan's set price
+    dynamic_price = Column(Float, nullable=True)      # filled in later by Group 3's pricing AI
+    image_url = Column(String, nullable=True)          # Cloudinary URL
+    language = Column(String, default="en")
+    owner_id = Column(Integer, ForeignKey("users.id"))
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    owner = relationship("User", back_populates="products")
+    orders = relationship("Order", back_populates="product")
+
+
+class Order(Base):
+    __tablename__ = "orders"
+
+    id = Column(Integer, primary_key=True, index=True)
+    product_id = Column(Integer, ForeignKey("products.id"))
+    buyer_id = Column(Integer, ForeignKey("users.id"))
+    quantity = Column(Integer, default=1)
+    total_price = Column(Float, nullable=False)
+    status = Column(String, default="pending")  # pending, confirmed, shipped, delivered, cancelled
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    product = relationship("Product", back_populates="orders")
+    buyer = relationship("User", back_populates="orders")
