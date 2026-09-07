@@ -23,22 +23,23 @@ import { Card } from '../../components/primitives/Card';
 import { FormField } from '../../components/primitives/FormField';
 import { Input } from '../../components/primitives/Input';
 import { useToast } from '../../hooks/useToast';
+import { useAuth } from '../../hooks/useAuth';
 
 export function ArtisanProfilePage() {
+  const { user, updateProfile } = useAuth();
   const { addToast } = useToast();
 
-  const [studioName, setStudioName] = useState('Govindappa Kalamkari Heritage Works');
-  const [artisanName, setArtisanName] = useState('Govindappa V.');
-  const [region, setRegion] = useState('Srikalahasti, Tirupati District, Andhra Pradesh');
-  const [phone, setPhone] = useState('+91 94401 28910');
-  const [upiId, setUpiId] = useState('govindappa.craft@okhdfcbank');
+  const [studioName, setStudioName] = useState(user?.studioName || `${user?.name || 'Artisan'}'s Craft Studio`);
+  const [artisanName, setArtisanName] = useState(user?.name || 'Artisan');
+  const [region, setRegion] = useState(user?.region || 'Andhra Pradesh, India');
+  const [phone, setPhone] = useState(user?.phone || '+91 94401 28910');
+  const [upiId, setUpiId] = useState(user?.upiId || 'artisan.craft@okhdfcbank');
 
   // Audio bio player & recorder state
   const [isPlayingBio, setIsPlayingBio] = useState(false);
   const [isRecordingBio, setIsRecordingBio] = useState(false);
 
-  const bioText =
-    'नमस्ते, मैं गोविन्दप्पा। श्रीकालहस्ती में हमारी चौथी पीढ़ी कलमकारी हस्तकला कर रही है। हम केवल शुद्ध प्राकृतिक रंगों—जैसे हरड़, फिटकरी, नील और गाय के दूध—का उपयोग करते हैं। हर एक कपड़े को स्वर्णमुखी नदी के पावन जल में धोकर पक्का किया जाता है।';
+  const bioText = `नमस्ते, मैं ${artisanName}। हमारी पीढ़ियाँ पारंपरिक हस्तकला का निर्माण कर रही हैं। हम शुद्ध प्राकृतिक सामग्री और पारंपरिक तकनीकों का उपयोग करते हैं।`;
 
   const handlePlayBio = () => {
     setIsPlayingBio(true);
@@ -124,11 +125,24 @@ export function ArtisanProfilePage() {
             <div className="px-6 pb-6 pt-0 relative">
               <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4 -mt-14 mb-4">
                 <div className="relative">
-                  <img
-                    src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=250"
-                    alt={artisanName}
-                    className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl object-cover border-4 border-white shadow-lg bg-white"
-                  />
+                  {user?.avatar ? (
+                    <img
+                      src={user.avatar}
+                      alt={artisanName}
+                      className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl object-cover border-4 border-white shadow-lg bg-white"
+                    />
+                  ) : (
+                    <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-emerald-700 text-white font-bold text-2xl flex items-center justify-center border-4 border-white shadow-lg">
+                      {artisanName
+                        ? artisanName
+                            .split(' ')
+                            .map((n) => n[0])
+                            .slice(0, 2)
+                            .join('')
+                            .toUpperCase()
+                        : 'AR'}
+                    </div>
+                  )}
                   <span className="absolute bottom-1 right-1 w-6 h-6 rounded-full bg-emerald-500 border-2 border-white flex items-center justify-center text-white">
                     <CheckCircle className="w-3.5 h-3.5" />
                   </span>

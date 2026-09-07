@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShoppingBag, ArrowLeft, ShieldCheck, Truck, RefreshCw, Star } from 'lucide-react';
+import { ShoppingBag, ArrowLeft, ShieldCheck, Truck, RefreshCw, Star, Palette, Share2 } from 'lucide-react';
 import { PageContainer } from '../../components/layout/PageContainer';
 import { Button } from '../../components/primitives/Button';
 import { Badge } from '../../components/primitives/Badge';
@@ -11,6 +11,7 @@ import { FavoriteButton } from '../../components/domain/FavoriteButton';
 import { StoryCard } from '../../components/domain/StoryCard';
 import { ReviewCard } from '../../components/domain/ReviewCard';
 import { RecommendationCarousel } from '../../components/domain/RecommendationCarousel';
+import { RequestCustomizationModal } from '../../components/customer/RequestCustomizationModal';
 import { mockProducts, mockStories, mockReviews } from '../../lib/mockData';
 import { useToast } from '../../hooks/useToast';
 
@@ -26,6 +27,7 @@ export function ProductDetailPage({
 }) {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
+  const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
   const { addToast } = useToast();
 
   const relatedStory = mockStories[0];
@@ -77,7 +79,22 @@ export function ProductDetailPage({
               aspectRatio="square"
               className="w-full h-full object-cover"
             />
-            <div className="absolute top-4 right-4 z-20">
+            <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  if (navigator.share) {
+                    navigator.share({ title: product.title, url: window.location.href }).catch(() => {});
+                  } else {
+                    navigator.clipboard?.writeText(window.location.href);
+                    addToast({ type: 'info', title: 'Link Copied', message: 'Product link copied to clipboard.' });
+                  }
+                }}
+                className="w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm border border-border flex items-center justify-center text-text-primary hover:text-primary transition-all shadow-sm"
+                aria-label="Share product"
+              >
+                <Share2 className="w-5 h-5" />
+              </button>
               <FavoriteButton size="lg" />
             </div>
           </div>
@@ -122,7 +139,21 @@ export function ProductDetailPage({
               {product.title}
             </h1>
 
-            <p className="text-sm text-secondary font-medium mt-1">
+            {/* Rating with count & Tag chips */}
+            <div className="flex flex-wrap items-center gap-2.5 mt-2">
+              <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200 text-xs font-bold text-amber-900">
+                <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
+                <span>4.9 (124)</span>
+              </div>
+              <span className="px-2.5 py-1 rounded-full bg-neutral-100 text-neutral-800 text-xs font-semibold">
+                Handmade
+              </span>
+              <span className="px-2.5 py-1 rounded-full bg-neutral-100 text-neutral-800 text-xs font-semibold">
+                {product.craft || 'Heritage Craft'}
+              </span>
+            </div>
+
+            <p className="text-sm text-secondary font-medium mt-2">
               Crafted by{' '}
               <button
                 type="button"
@@ -195,26 +226,40 @@ export function ProductDetailPage({
             </div>
 
             <Button
-              variant="primary"
+              variant="outline"
               size="md"
               onClick={handleAddToCart}
-              className="flex-1 w-full"
+              className="flex-1 w-full border-[#ECECEC] text-[#1B1B1B] hover:bg-neutral-50"
               leftIcon={<ShoppingBag className="w-4 h-4" />}
             >
               Add to Cart
             </Button>
             <Button
-              variant="secondary"
+              variant="primary"
               size="md"
               onClick={() => {
                 handleAddToCart();
                 onNavigate?.('cart');
               }}
-              className="w-full sm:w-auto"
+              className="w-full sm:w-auto bg-[#1FA97D] hover:bg-[#198d68] text-white"
             >
               Buy Now
             </Button>
+            <button
+              type="button"
+              onClick={() => setIsCustomModalOpen(true)}
+              className="w-full sm:w-auto px-4 py-2 rounded-xl bg-[#E8F7F1] hover:bg-[#d5f2e6] text-[#1FA97D] border border-[#1FA97D]/30 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors focus-ring"
+            >
+              <Palette className="w-4 h-4 text-[#1FA97D]" />
+              <span>Request Customization</span>
+            </button>
           </div>
+
+          <RequestCustomizationModal
+            isOpen={isCustomModalOpen}
+            onClose={() => setIsCustomModalOpen(false)}
+            product={product}
+          />
 
           {/* Delivery & Craft Trust Details */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4 text-xs text-text-secondary border-t border-border/60">

@@ -6,18 +6,21 @@
 
 @layer base {
   html {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
     color: var(--color-text-primary);
     background-color: var(--color-background);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
-  h1, h2, h3, .font-heading {
-    font-family: 'Fraunces', serif;
+  h1, h2, h3, h4, .font-heading {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    letter-spacing: -0.01em;
   }
 
-  /* Accessible focus ring applied globally to keyboard interactions */
+  /* Accessible focus ring */
   *:focus-visible {
     outline: 2px solid var(--color-primary);
     outline-offset: 2px;

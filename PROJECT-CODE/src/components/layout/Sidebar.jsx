@@ -25,6 +25,7 @@ export function Sidebar({
   title = 'Menu',
   subtitle,
   role,
+  user = null,
   className = '',
 }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -120,15 +121,28 @@ export function Sidebar({
             {!isCollapsed && (
               isArtisan ? (
                 <div className="flex items-center gap-2.5">
-                  <img
-                    src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=250"
-                    alt="Lakshmi Devi"
-                    className="w-10 h-10 rounded-full object-cover border border-border shrink-0"
-                  />
+                  {user?.avatar ? (
+                    <img
+                      src={user.avatar}
+                      alt={user.name || 'Artisan'}
+                      className="w-10 h-10 rounded-full object-cover border border-border shrink-0"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-emerald-700 text-white font-bold text-sm flex items-center justify-center border border-border shrink-0">
+                      {user?.name
+                        ? user.name
+                            .split(' ')
+                            .map((n) => n[0])
+                            .slice(0, 2)
+                            .join('')
+                            .toUpperCase()
+                        : 'AR'}
+                    </div>
+                  )}
                   <div className="flex flex-col min-w-0">
                     <span className="text-[11px] text-text-secondary leading-tight">Welcome,</span>
                     <span className="font-heading text-sm font-bold text-text-primary leading-tight truncate">
-                      Lakshmi Devi
+                      {user?.name || 'Artisan'}
                     </span>
                     <span className="text-[11px] text-text-secondary leading-tight mt-0.5">
                       Artisan <span className="text-emerald-700 font-semibold">• Online</span>

@@ -33,9 +33,13 @@ export function AppShell({
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const navItems = getNavForRole(role);
 
+  const artisanSubtitle = user?.name
+    ? `${user.name}${user.region ? ` • ${user.region}` : ''}`
+    : 'Artisan Studio';
+
   const roleTitles = {
     [ROLES.CUSTOMER]: { title: 'Discover Crafts', subtitle: 'Authentic Traditional Marketplace' },
-    [ROLES.ARTISAN]: { title: 'Artisan Studio', subtitle: 'Govindappa V. • Srikalahasti' },
+    [ROLES.ARTISAN]: { title: 'Artisan Studio', subtitle: artisanSubtitle },
     [ROLES.ADMIN]: { title: 'Admin Console', subtitle: 'Platform Governance & Graph Health' },
   };
 
@@ -81,6 +85,7 @@ export function AppShell({
             title={currentRoleInfo.title}
             subtitle={currentRoleInfo.subtitle}
             role={role}
+            user={user}
           />
         )}
 

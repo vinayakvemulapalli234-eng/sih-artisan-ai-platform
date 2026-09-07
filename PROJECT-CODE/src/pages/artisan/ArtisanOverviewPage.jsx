@@ -6,19 +6,22 @@ import {
   Mic,
   ArrowRight,
   Sparkles,
-  Leaf,
-  Globe,
+  Phone,
+  HelpCircle,
+  Clock,
+  CheckCircle2,
 } from 'lucide-react';
 import { PageContainer } from '../../components/layout/PageContainer';
-import { ArtisanReferenceActionCard } from '../../components/artisan/ArtisanReferenceActionCard';
-import { QuickHelpCard } from '../../components/artisan/QuickHelpCard';
+import { ActionCard, BottomNav, StatusBadge, ProgressBar, Card, Button } from '../../components/design-system';
 import { SuggestedPriceCard } from '../../components/artisan/SuggestedPriceCard';
 import { TrackBulkOrderCard } from '../../components/artisan/TrackBulkOrderCard';
 import { LanguageSelectorModal, ARTISAN_LANGUAGES } from '../../components/artisan/LanguageSelectorModal';
 import { VoiceAssistantModal } from '../../components/artisan/VoiceAssistantModal';
+import { ArtisanBigOrderModal } from '../../components/artisan/ArtisanBigOrderModal';
 import { useToast } from '../../hooks/useToast';
+import { useAuth } from '../../hooks/useAuth';
 
-// Reference image products
+// Mock products & orders
 const REFERENCE_PRODUCTS = [
   {
     id: 'prod-konda',
@@ -46,14 +49,13 @@ const REFERENCE_PRODUCTS = [
   },
 ];
 
-// Reference image recent orders
 const REFERENCE_RECENT_ORDERS = [
   {
     id: '#12345',
     title: 'Kondapalli Wooden Toy',
     details: '100 pieces • ₹30,000',
     status: 'In Production',
-    statusType: 'production',
+    progress: 60,
     date: '5 Aug 2026',
     image: 'https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?auto=format&fit=crop&w=150&q=80',
   },
@@ -61,8 +63,8 @@ const REFERENCE_RECENT_ORDERS = [
     id: '#12346',
     title: 'Handmade Bag',
     details: '50 pieces • ₹25,000',
-    status: 'Delivered',
-    statusType: 'delivered',
+    status: 'Completed',
+    progress: 100,
     date: '3 Aug 2026',
     image: 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=150&q=80',
   },
@@ -71,320 +73,295 @@ const REFERENCE_RECENT_ORDERS = [
     title: 'Blue Wooden Toy',
     details: '120 pieces • ₹12,000',
     status: 'Pending',
-    statusType: 'pending',
+    progress: 10,
     date: '1 Aug 2026',
     image: 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?auto=format&fit=crop&w=150&q=80',
   },
 ];
 
 /**
- * ArtisanOverviewPage (Artisan Home)
- * Pixel-perfect adaptation of the user's reference image for KalaKriti.
+ * Screen 2: Artisan Home (Locked Spec)
+ *
+ * Top Bar: Profile photo (small circle) + "Namaste, {ArtisanFirstName}" + notification bell with unread dot.
+ * Subtitle: "What would you like to do?"
+ * 4 ActionCards in EXACT order & tints:
+ *  1. Green tint (#E8F7F1), camera: Add Product / "Take a photo and list your product"
+ *  2. Pink tint (#FDEAF0), box (#E8577E): My Orders / "View your orders"
+ *  3. Yellow tint (#FFF6DD), bell (#E8A93A): New Requests / "Check custom orders and big orders"
+ *  4. Lavender tint (#EDEBFB), mic (#6C63C7): Speak to App / "Tap and speak in your language"
+ * Bottom Navigation: Home (active), Orders, Requests, Me.
  */
 export function ArtisanOverviewPage({ onNavigate }) {
+  const { user } = useAuth();
   const { addToast } = useToast();
 
-  const [isLangOpen, setIsLangOpen] = useState(false);
   const [isVoiceOpen, setIsVoiceOpen] = useState(false);
-  const [currentLang, setCurrentLang] = useState(ARTISAN_LANGUAGES[0]); // English default or Hindi
+  const [isBigOrderOpen, setIsBigOrderOpen] = useState(false);
 
-  const handleUseSuggestedPrice = (price) => {
-    addToast({
-      type: 'success',
-      title: `₹${price} Price Applied!`,
-      message: `Recommended price ₹${price} set for your latest product draft.`,
-    });
-  };
-
-  const handleTrackBulkOrder = () => {
-    onNavigate?.('orders');
-    addToast({
-      type: 'info',
-      title: 'Bulk Order Tracking',
-      message: 'Opening 500 wooden toys production schedule.',
-    });
-  };
-
-  const handleTalkToPerson = () => {
-    addToast({
-      type: 'info',
-      title: 'Connecting Support Officer',
-      message: 'Calling KalaKriti Artisan Helpline (1800-208-CRAFT)...',
-    });
-  };
+  const firstName = user?.name ? user.name.split(' ')[0] : 'Artisan';
 
   return (
-    <PageContainer className="py-6 space-y-6">
-      {/* 1. TOP HEADER & GREETING */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="font-heading text-2xl sm:text-3xl font-extrabold text-text-primary tracking-tight">
-            Namaste, Lakshmi Devi! 👋
-          </h1>
-          <p className="text-sm text-text-secondary mt-1">
-            Let's showcase your craft to the world.
-          </p>
-        </div>
+    <div className="min-h-screen bg-[#F4F4F4] pb-28">
+      {/* 1. TOP BAR */}
+      <header className="sticky top-0 z-30 bg-white border-b border-[#ECECEC] px-4 py-3.5 shadow-2xs">
+        <div className="max-w-4xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {/* Small circular profile avatar */}
+            <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-[#1FA97D]/30 bg-[#E8F7F1] flex items-center justify-center text-sm font-bold text-[#1FA97D] shrink-0">
+              {user?.avatar ? (
+                <img src={user.avatar} alt={firstName} className="w-full h-full object-cover" />
+              ) : (
+                firstName.charAt(0)
+              )}
+            </div>
 
-        <div className="flex items-center gap-3">
-          {/* Language Switcher Pill */}
+            <div>
+              <h1 className="text-lg sm:text-xl font-bold text-[#1B1B1B] leading-tight">
+                Namaste, {firstName}
+              </h1>
+              <p className="text-xs text-[#6B6B6B]">
+                What would you like to do?
+              </p>
+            </div>
+          </div>
+
+          {/* Notification bell with unread dot */}
           <button
             type="button"
-            onClick={() => setIsLangOpen(true)}
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-neutral-100 hover:bg-neutral-200/80 border border-border text-xs font-semibold text-text-primary transition-colors"
+            onClick={() => onNavigate?.('notifications')}
+            className="relative p-2.5 rounded-full hover:bg-neutral-100 text-[#1B1B1B] transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center"
+            aria-label="View notifications"
           >
-            <Globe className="w-3.5 h-3.5 text-text-secondary" />
-            <span>{currentLang.nativeName}</span>
+            <Bell className="w-6 h-6 stroke-[1.8]" />
+            <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-[#E8577E] rounded-full ring-2 ring-white" />
           </button>
-
-          {/* Quote Pill / Card */}
-          <div className="p-2.5 sm:px-4 sm:py-2 rounded-2xl bg-[#FBF6EE] border border-amber-200/60 flex items-center gap-2 text-xs text-amber-950 font-medium shadow-2xs">
-            <span className="italic">"Every handmade product tells a story."</span>
-            <Leaf className="w-4 h-4 text-emerald-600 shrink-0" />
-          </div>
         </div>
-      </div>
+      </header>
 
-      {/* 2. TOP 4 PASTEL ACTION CARDS */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Card 1: Add Product */}
-        <ArtisanReferenceActionCard
-          icon={Camera}
-          iconBgColor="bg-emerald-600"
-          iconTextColor="text-white"
-          cardBgColor="bg-[#E8F8F0]"
-          cardBorderColor="border-emerald-200/70"
-          title="Add Product"
-          subtitle="Take a photo and list your product"
-          onClick={() => onNavigate?.('add-product')}
-        />
+      {/* MAIN CONTENT CONTAINER */}
+      <main className="max-w-4xl mx-auto px-4 pt-5 space-y-6">
+        {/* 2. FOUR EXACT ACTION CARDS (LOCKED ORDER & TINTS) */}
+        <section aria-label="Quick Actions">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            {/* 1. Green: Add Product */}
+            <ActionCard
+              icon={Camera}
+              variant="green"
+              title="Add Product"
+              subtitle="Take a photo and list your product"
+              onClick={() => onNavigate?.('add-product')}
+            />
 
-        {/* Card 2: My Orders */}
-        <ArtisanReferenceActionCard
-          icon={Package}
-          iconBgColor="bg-[#E5634D]"
-          iconTextColor="text-white"
-          cardBgColor="bg-[#FDF0ED]"
-          cardBorderColor="border-orange-200/70"
-          title="My Orders"
-          subtitle="View and manage your orders"
-          onClick={() => onNavigate?.('orders')}
-        />
+            {/* 2. Pink: My Orders */}
+            <ActionCard
+              icon={Package}
+              variant="pink"
+              title="My Orders"
+              subtitle="View your orders"
+              onClick={() => onNavigate?.('orders')}
+            />
 
-        {/* Card 3: Notifications */}
-        <ArtisanReferenceActionCard
-          icon={Bell}
-          iconBgColor="bg-[#E5A93C]"
-          iconTextColor="text-white"
-          cardBgColor="bg-[#FEF8E7]"
-          cardBorderColor="border-amber-200/70"
-          title="Notifications"
-          subtitle="Check updates and new requests"
-          onClick={() => onNavigate?.('notifications')}
-        />
+            {/* 3. Yellow: New Requests */}
+            <ActionCard
+              icon={Bell}
+              variant="yellow"
+              title="New Requests"
+              subtitle="Check custom orders and big orders"
+              onClick={() => setIsBigOrderOpen(true)}
+            />
 
-        {/* Card 4: Speak to App */}
-        <ArtisanReferenceActionCard
-          icon={Mic}
-          iconBgColor="bg-[#3B82F6]"
-          iconTextColor="text-white"
-          cardBgColor="bg-[#EBF3FE]"
-          cardBorderColor="border-blue-200/70"
-          title="Speak to App"
-          subtitle="Tap and speak in your language"
-          onClick={() => setIsVoiceOpen(true)}
-        />
-      </div>
+            {/* 4. Lavender: Speak to App */}
+            <ActionCard
+              icon={Mic}
+              variant="lavender"
+              title="Speak to App"
+              subtitle="Tap and speak in your language"
+              onClick={() => setIsVoiceOpen(true)}
+            />
+          </div>
+        </section>
 
-      {/* 3. MIDDLE SECTION: RECENT ORDERS & YOUR PRODUCTS */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        {/* LEFT: Recent Orders (approx 5 cols on lg) */}
-        <div className="lg:col-span-5 p-5 sm:p-6 rounded-3xl border border-border/80 bg-white shadow-xs flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between gap-2 mb-4">
-              <h2 className="font-heading text-base sm:text-lg font-bold text-text-primary">
+        {/* 3. RECENT ORDERS & YOUR PRODUCTS */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+          {/* Recent Orders */}
+          <div className="lg:col-span-6 bg-white p-5 rounded-2xl border border-[#ECECEC] shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-bold text-[#1B1B1B]">
                 Recent Orders
               </h2>
               <button
                 type="button"
                 onClick={() => onNavigate?.('orders')}
-                className="text-xs font-bold text-emerald-700 hover:text-emerald-800 flex items-center gap-1 group"
+                className="text-xs font-semibold text-[#1FA97D] hover:underline flex items-center gap-1"
               >
-                <span>View All</span>
-                <span className="group-hover:translate-x-0.5 transition-transform">→</span>
+                <span>View all</span>
+                <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
 
-            {/* Orders List */}
             <div className="space-y-3">
-              {REFERENCE_RECENT_ORDERS.map((order) => {
-                const isProduction = order.statusType === 'production';
-                const isDelivered = order.statusType === 'delivered';
-
-                return (
-                  <div
-                    key={order.id}
-                    onClick={() => onNavigate?.('orders')}
-                    className="p-3 rounded-2xl border border-border/60 hover:border-emerald-500/40 hover:bg-neutral-50/50 transition-all flex items-center justify-between gap-3 cursor-pointer"
-                  >
-                    {/* Thumbnail & Title */}
-                    <div className="flex items-center gap-3 min-w-0">
+              {REFERENCE_RECENT_ORDERS.map((order) => (
+                <div
+                  key={order.id}
+                  onClick={() => onNavigate?.('orders')}
+                  className="p-3 rounded-xl border border-[#ECECEC] hover:border-[#1FA97D]/40 bg-white hover:bg-neutral-50/50 transition-all cursor-pointer"
+                >
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
                       <img
                         src={order.image}
                         alt={order.title}
-                        className="w-12 h-12 rounded-xl object-cover border border-border shrink-0"
+                        className="w-11 h-11 rounded-lg object-cover border border-[#ECECEC] shrink-0"
                       />
                       <div className="min-w-0">
-                        <div className="flex items-center gap-1.5 text-xs text-text-secondary font-mono">
-                          <span>{order.id}</span>
-                        </div>
-                        <h4 className="font-heading text-sm font-bold text-text-primary truncate">
+                        <span className="text-[11px] font-mono text-[#6B6B6B] block">
+                          {order.id}
+                        </span>
+                        <h4 className="text-sm font-bold text-[#1B1B1B] truncate">
                           {order.title}
                         </h4>
-                        <p className="text-xs text-text-secondary mt-0.5 font-medium">
+                        <p className="text-xs text-[#6B6B6B]">
                           {order.details}
                         </p>
                       </div>
                     </div>
 
-                    {/* Status Pill & Date */}
-                    <div className="text-right shrink-0 flex flex-col items-end">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
-                          isProduction
-                            ? 'bg-[#E8F8F0] text-emerald-800'
-                            : isDelivered
-                            ? 'bg-[#EBF3FE] text-blue-800'
-                            : 'bg-[#FEF4E6] text-amber-900'
-                        }`}
-                      >
-                        {isProduction && <span className="mr-1">⚡</span>}
-                        {isDelivered && <span className="mr-1">✓</span>}
-                        {!isProduction && !isDelivered && <span className="mr-1">⏳</span>}
+                    <div className="text-right shrink-0">
+                      <StatusBadge variant="auto">
                         {order.status}
-                      </span>
-                      <span className="text-[11px] text-text-muted mt-1.5">
-                        {order.date}
-                      </span>
+                      </StatusBadge>
                     </div>
                   </div>
-                );
-              })}
+
+                  {order.status === 'In Production' && (
+                    <div className="mt-2 pt-2 border-t border-[#ECECEC]/60">
+                      <ProgressBar
+                        value={order.progress}
+                        label="Production progress"
+                        showPercentage
+                        height="h-2"
+                      />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Your Products */}
+          <div className="lg:col-span-6 bg-white p-5 rounded-2xl border border-[#ECECEC] shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-bold text-[#1B1B1B]">
+                Your Products
+              </h2>
+              <button
+                type="button"
+                onClick={() => onNavigate?.('products')}
+                className="text-xs font-semibold text-[#1FA97D] hover:underline flex items-center gap-1"
+              >
+                <span>View all</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              {REFERENCE_PRODUCTS.map((prod) => (
+                <div
+                  key={prod.id}
+                  className="rounded-xl border border-[#ECECEC] overflow-hidden bg-white flex flex-col justify-between"
+                >
+                  <div className="aspect-square w-full bg-neutral-100 overflow-hidden">
+                    <img
+                      src={prod.image}
+                      alt={prod.title}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="p-2.5">
+                    <h4 className="text-xs font-bold text-[#1B1B1B] truncate">
+                      {prod.title}
+                    </h4>
+                    <span className="text-xs font-bold text-[#1FA97D] block mt-0.5">
+                      ₹{prod.price}
+                    </span>
+                    <span className="inline-block mt-1 text-[10px] text-[#1FA97D] bg-[#E8F7F1] px-1.5 py-0.5 rounded font-medium">
+                      Live
+                    </span>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
 
-        {/* RIGHT: Your Products (approx 7 cols on lg) */}
-        <div className="lg:col-span-7 p-5 sm:p-6 rounded-3xl border border-border/80 bg-white shadow-xs">
-          <div className="flex items-center justify-between gap-2 mb-4">
-            <h2 className="font-heading text-base sm:text-lg font-bold text-text-primary">
-              Your Products
-            </h2>
-            <button
-              type="button"
-              onClick={() => onNavigate?.('products')}
-              className="text-xs font-bold text-emerald-700 hover:text-emerald-800 flex items-center gap-1 group"
-            >
-              <span>View All</span>
-              <span className="group-hover:translate-x-0.5 transition-transform">→</span>
-            </button>
-          </div>
-
-          {/* 3 Product Cards Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-            {REFERENCE_PRODUCTS.map((prod) => (
-              <div
-                key={prod.id}
-                className="rounded-2xl border border-border/70 overflow-hidden bg-white hover:shadow-md transition-all flex flex-col justify-between"
-              >
-                <div>
-                  <div className="aspect-4/3 w-full overflow-hidden bg-neutral-100">
-                    <img
-                      src={prod.image}
-                      alt={prod.title}
-                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                    />
-                  </div>
-
-                  <div className="p-3">
-                    <h4 className="font-heading text-xs font-bold text-text-primary truncate">
-                      {prod.title}
-                    </h4>
-                    <span className="font-heading text-sm font-extrabold text-text-primary block mt-0.5">
-                      ₹{prod.price}
-                    </span>
-
-                    {/* Chips */}
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {prod.tags.map((t) => (
-                        <span
-                          key={t}
-                          className="px-1.5 py-0.5 rounded bg-neutral-100 text-[10px] text-text-secondary font-medium"
-                        >
-                          {t}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="px-3 pb-3 pt-1">
-                  <span className="w-full py-1 rounded-lg bg-[#E8F8F0] text-emerald-800 text-[10px] font-bold text-center block">
-                    {prod.status}
-                  </span>
-                </div>
+        {/* 4. HELPFUL ACTIONS: NEED HELP & SUGGESTED PRICE */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Quick Help Card */}
+          <Card className="flex flex-col justify-between p-5 bg-[#E7F1FE]/40 border-[#3E8EDE]/20">
+            <div>
+              <div className="w-10 h-10 rounded-xl bg-[#E7F1FE] text-[#3E8EDE] flex items-center justify-center mb-3">
+                <HelpCircle className="w-5 h-5 stroke-[2.2]" />
               </div>
-            ))}
-          </div>
+              <h3 className="text-base font-bold text-[#1B1B1B]">
+                Need Help?
+              </h3>
+              <p className="text-xs text-[#6B6B6B] mt-1">
+                Speak your question in your language or talk directly to our artisan support team.
+              </p>
+            </div>
+            <div className="mt-4 flex items-center gap-2">
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => onNavigate?.('help')}
+                className="bg-[#3E8EDE] hover:bg-[#3277bb]"
+              >
+                Open Help Center
+              </Button>
+            </div>
+          </Card>
+
+          {/* Fair Price Guide Card */}
+          <Card className="flex flex-col justify-between p-5 bg-[#FFF6DD]/50 border-[#E8A93A]/20">
+            <div>
+              <div className="w-10 h-10 rounded-xl bg-[#FFF6DD] text-[#E8A93A] flex items-center justify-center mb-3">
+                <Sparkles className="w-5 h-5 stroke-[2.2]" />
+              </div>
+              <h3 className="text-base font-bold text-[#1B1B1B]">
+                Fair Price Recommendation
+              </h3>
+              <p className="text-xs text-[#6B6B6B] mt-1">
+                Our AI analyzes material cost and craft hours so you always earn a dignified livelihood.
+              </p>
+            </div>
+            <div className="mt-4">
+              <span className="text-xs font-bold text-[#E8A93A] bg-[#FFF6DD] px-3 py-1.5 rounded-full border border-[#E8A93A]/30">
+                100% Fair Price Protection
+              </span>
+            </div>
+          </Card>
         </div>
-      </div>
-
-      {/* 4. BOTTOM SECTION: QUICK HELP, SUGGESTED PRICE, TRACK BULK ORDER */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        {/* Quick Help */}
-        <QuickHelpCard
-          onSpeakQuestion={() => setIsVoiceOpen(true)}
-          onTalkToPerson={handleTalkToPerson}
-        />
-
-        {/* Suggested Price */}
-        <SuggestedPriceCard
-          price={650}
-          minRange={600}
-          maxRange={700}
-          onUsePrice={handleUseSuggestedPrice}
-        />
-
-        {/* Track Bulk Order */}
-        <TrackBulkOrderCard
-          itemCount="500 wooden toys"
-          statusBadge="Sample Approved"
-          currentStep={2} // In Production
-          onTrackOrder={handleTrackBulkOrder}
-        />
-      </div>
+      </main>
 
       {/* MODALS */}
-      <LanguageSelectorModal
-        isOpen={isLangOpen}
-        onClose={() => setIsLangOpen(false)}
-        currentLanguage={currentLang.code}
-        onSelectLanguage={(lang) => {
-          setCurrentLang(lang);
-          addToast({
-            type: 'success',
-            title: `Language changed to ${lang.nativeName}`,
-            message: `Selected ${lang.name}`,
-          });
-        }}
-      />
-
       <VoiceAssistantModal
         isOpen={isVoiceOpen}
         onClose={() => setIsVoiceOpen(false)}
         onNavigate={onNavigate}
       />
-    </PageContainer>
+
+      <ArtisanBigOrderModal
+        isOpen={isBigOrderOpen}
+        onClose={() => setIsBigOrderOpen(false)}
+        onAccepted={() => onNavigate?.('orders')}
+      />
+
+      {/* FIXED 4-ITEM BOTTOM NAVIGATION */}
+      <BottomNav
+        activeTab="home"
+        onNavigate={onNavigate}
+      />
+    </div>
   );
 }
 

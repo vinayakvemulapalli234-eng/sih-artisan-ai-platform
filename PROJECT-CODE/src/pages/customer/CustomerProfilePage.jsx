@@ -11,16 +11,20 @@ import { Toggle } from '../../components/primitives/Toggle';
 import { Button } from '../../components/primitives/Button';
 import { useToast } from '../../hooks/useToast';
 
+import { useAuth } from '../../hooks/useAuth';
+
 /**
  * Customer: CustomerProfilePage
  * Preferences, craft affinities, and shipping address
  */
 export function CustomerProfilePage() {
+  const { user, updateProfile } = useAuth();
   const { addToast } = useToast();
-  const [name, setName] = useState('Aarav Sharma');
-  const [email, setEmail] = useState('aarav.sharma@example.com');
-  const [phone, setPhone] = useState('+91 98450 12345');
-  const [interests, setInterests] = useState(['Kalamkari', 'Dhokra Metal', 'Pashmina']);
+
+  const [name, setName] = useState(user?.name || 'Customer');
+  const [email, setEmail] = useState(user?.email || 'customer@kalakriti.in');
+  const [phone, setPhone] = useState(user?.phone || '+91 98450 12345');
+  const [interests, setInterests] = useState(user?.interests || ['Kalamkari', 'Dhokra Metal', 'Pashmina']);
   const [notifyCraftStories, setNotifyCraftStories] = useState(true);
   const [notifyNewArrivals, setNotifyNewArrivals] = useState(false);
 
@@ -41,7 +45,15 @@ export function CustomerProfilePage() {
   };
 
   const handleSave = () => {
-    // TODO: integrate with backend
+    if (updateProfile) {
+      updateProfile({
+        name,
+        email,
+        phone,
+        interests,
+      });
+    }
+
     addToast({
       type: 'success',
       title: 'Profile Updated',

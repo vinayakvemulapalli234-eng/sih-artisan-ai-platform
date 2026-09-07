@@ -47,6 +47,10 @@ import {
   ResetPasswordPage,
 } from './pages/auth';
 
+// Onboarding Pages (Phase 1 to 4)
+import { LanguageSelectionPage, AIVoiceRoleQueryPage } from './pages/onboarding';
+import { getAppLanguage, setAppLanguage } from './i18n/translations';
+
 function AppContent() {
   const { user, isAuthenticated, logout } = useAuth();
   const { addToast } = useToast();
@@ -64,38 +68,108 @@ function AppContent() {
     }
   }, [user]);
 
-  // Sync with URL hash if present
+  // Handle URL hash and enforce entry onboarding + route guards
   useEffect(() => {
     const handleHashChange = () => {
-      const hash = window.location.hash.replace(/^#\/?/, '');
-      if (hash) {
-        const parts = hash.split('/');
-        // Auth standalone routes: #/login, #/register, #/artisan-login, etc.
-        const authRoutes = [
-          'login',
-          'register',
-          'artisan-login',
-          'artisan-register',
-          'admin-login',
-          'forgot-password',
-          'reset-password',
-        ];
+      const rawHash = window.location.hash.replace(/^#\/?/, '');
+      const hasLanguage = Boolean(localStorage.getItem('kalakriti_app_language'));
 
-        if (authRoutes.includes(parts[0])) {
-          setActivePage(parts[0]);
-        } else if (parts[0] === 'artisan' || parts[0] === 'admin' || parts[0] === 'customer') {
-          setRole(parts[0]);
-          if (parts[1]) setActivePage(parts[1]);
+      const standaloneRoutes = [
+        'language-select',
+        'voice-role-query',
+        'select-role',
+        'login',
+        'register',
+        'artisan-login',
+        'artisan-register',
+        'admin-login',
+        'forgot-password',
+        'reset-password',
+      ];
+
+      // 1. If no hash is provided:
+      if (!rawHash) {
+        if (isAuthenticated && user) {
+          const defaultDash = user.role === ROLES.CUSTOMER ? 'home' : 'overview';
+          setRole(user.role);
+          setActivePage(defaultDash);
+          window.location.hash = `#/${user.role}/${defaultDash}`;
+        } else if (!hasLanguage) {
+          setActivePage('language-select');
+          window.location.hash = `#/language-select`;
         } else {
-          setActivePage(parts[0]);
+          setActivePage('voice-role-query');
+          window.location.hash = `#/voice-role-query`;
         }
+        return;
+      }
+
+      const parts = rawHash.split('/');
+      const pageName = parts[0];
+
+      // 2. Standalone auth and onboarding routes
+      if (standaloneRoutes.includes(pageName)) {
+        setActivePage(pageName);
+        return;
+      }
+
+      // 3. Role-based routes: e.g. #/artisan/overview, #/customer/home, #/admin/overview
+      if (parts[0] === 'artisan' || parts[0] === 'admin' || parts[0] === 'customer') {
+        const targetRole = parts[0];
+        const targetSubPage = parts[1] || (targetRole === ROLES.CUSTOMER ? 'home' : 'overview');
+
+        // ROUTE PROTECTION & ROLE ISOLATION
+        if (targetRole === ROLES.ARTISAN) {
+          if (!isAuthenticated || user?.role !== ROLES.ARTISAN) {
+            addToast({
+              type: 'warning',
+              title: 'Access Restricted',
+              message: 'Artisan portal requires an authenticated Artisan account.',
+            });
+            if (isAuthenticated) {
+              setRole(user.role);
+              const dest = user.role === ROLES.CUSTOMER ? 'home' : 'overview';
+              setActivePage(dest);
+              window.location.hash = `#/${user.role}/${dest}`;
+            } else {
+              setActivePage('artisan-login');
+              window.location.hash = `#/artisan-login`;
+            }
+            return;
+          }
+        }
+
+        if (targetRole === ROLES.ADMIN) {
+          if (!isAuthenticated || user?.role !== ROLES.ADMIN) {
+            addToast({
+              type: 'error',
+              title: 'Access Denied',
+              message: 'Administrative console is restricted to authorized platform administrators.',
+            });
+            if (isAuthenticated) {
+              setRole(user.role);
+              const dest = user.role === ROLES.CUSTOMER ? 'home' : 'overview';
+              setActivePage(dest);
+              window.location.hash = `#/${user.role}/${dest}`;
+            } else {
+              setActivePage('admin-login');
+              window.location.hash = `#/admin-login`;
+            }
+            return;
+          }
+        }
+
+        setRole(targetRole);
+        setActivePage(targetSubPage);
+      } else {
+        setActivePage(pageName);
       }
     };
 
     handleHashChange();
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
-  }, []);
+  }, [isAuthenticated, user]);
 
   const handleRoleChange = (newRole) => {
     setRole(newRole);
@@ -120,7 +194,10 @@ function AppContent() {
 
   const handleNavigate = (page) => {
     setActivePage(page);
-    const authRoutes = [
+    const standalone = [
+      'language-select',
+      'voice-role-query',
+      'select-role',
       'login',
       'register',
       'artisan-login',
@@ -130,7 +207,7 @@ function AppContent() {
       'reset-password',
     ];
 
-    if (authRoutes.includes(page)) {
+    if (standalone.includes(page)) {
       window.location.hash = `#/${page}`;
     } else {
       window.location.hash = `#/${role}/${page}`;
@@ -146,8 +223,8 @@ function AppContent() {
       message: 'You have been successfully signed out.',
     });
     setRole(ROLES.CUSTOMER);
-    setActivePage('home');
-    window.location.hash = `#/customer/home`;
+    setActivePage('voice-role-query');
+    window.location.hash = `#/voice-role-query`;
   };
 
   const handleLoginSuccess = (authUser) => {
@@ -177,7 +254,36 @@ function AppContent() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // 1. STANDALONE AUTHENTICATION PAGES
+  // 1. STANDALONE ONBOARDING & AUTHENTICATION PAGES
+  if (activePage === 'language-select') {
+    return (
+      <LanguageSelectionPage
+        onContinue={(langCode) => {
+          setAppLanguage(langCode);
+          handleNavigate('voice-role-query');
+        }}
+      />
+    );
+  }
+
+  if (activePage === 'voice-role-query' || activePage === 'select-role') {
+    return (
+      <AIVoiceRoleQueryPage
+        onSelectRole={(selectedRole) => {
+          setRole(selectedRole);
+          if (selectedRole === ROLES.ARTISAN) {
+            handleNavigate('artisan-login');
+          } else if (selectedRole === ROLES.ADMIN) {
+            handleNavigate('admin-login');
+          } else {
+            handleNavigate('login');
+          }
+        }}
+        onBack={() => handleNavigate('language-select')}
+      />
+    );
+  }
+
   if (activePage === 'login') {
     return (
       <CustomerLoginPage

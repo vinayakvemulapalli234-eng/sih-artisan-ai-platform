@@ -8,3 +8,4 @@ export { ArtisanRegisterPage } from './ArtisanRegisterPage';
 export { AdminLoginPage } from './AdminLoginPage';
 export { ForgotPasswordPage } from './ForgotPasswordPage';
 export { ResetPasswordPage } from './ResetPasswordPage';
+export { RoleSelectionPage } from './RoleSelectionPage';

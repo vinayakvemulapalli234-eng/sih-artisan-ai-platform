@@ -57,6 +57,12 @@ export function AuthProvider({ children }) {
     return await authService.resetPassword(payload);
   }, []);
 
+  const updateProfile = useCallback(async (updatedData) => {
+    const updated = authService.updateUserProfile(updatedData);
+    setUser(updated);
+    return updated;
+  }, []);
+
   const value = {
     user,
     role: user?.role || ROLES.CUSTOMER,
@@ -65,6 +71,7 @@ export function AuthProvider({ children }) {
     login,
     register,
     logout,
+    updateProfile,
     forgotPassword,
     resetPassword,
     demoAccounts: DEMO_ACCOUNTS,

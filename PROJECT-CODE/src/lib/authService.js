@@ -12,6 +12,28 @@
 import { ROLES } from './constants';
 
 const SESSION_STORAGE_KEY = 'kalakriti_mock_session';
+const REGISTERED_USERS_KEY = 'kalakriti_registered_users';
+
+export function getRegisteredUsers() {
+  try {
+    const raw = localStorage.getItem(REGISTERED_USERS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveRegisteredUser(user) {
+  try {
+    const existing = getRegisteredUsers();
+    const filtered = existing.filter(
+      (u) => u.email?.toLowerCase() !== user.email?.toLowerCase() && u.id !== user.id
+    );
+    localStorage.setItem(REGISTERED_USERS_KEY, JSON.stringify([user, ...filtered]));
+  } catch (err) {
+    console.error('Failed to persist user in registry', err);
+  }
+}
 
 // Pre-seeded demo accounts for quick testing & SIH evaluation
 export const DEMO_ACCOUNTS = {
@@ -48,7 +70,7 @@ export const DEMO_ACCOUNTS = {
 };
 
 // Simulated asynchronous network latency
-const simulateNetwork = (ms = 500) => new Promise((resolve) => setTimeout(resolve, ms));
+const simulateNetwork = (ms = 400) => new Promise((resolve) => setTimeout(resolve, ms));
 
 class AuthService {
   /**
@@ -74,7 +96,7 @@ class AuthService {
 
   /**
    * Login user with credentials and role
-   * TODO: integrate with backend -> POST /api/v1/auth/login
+   * Strictly resolves real registered user profile or demo account
    */
   async login({ identifier, password, role = ROLES.CUSTOMER, securityCode }) {
     await simulateNetwork();
@@ -83,15 +105,6 @@ class AuthService {
       throw new Error('Please provide both your identifier and password.');
     }
 
-    // Role-specific credential validation
-    const demoUser = DEMO_ACCOUNTS[role];
-    const isIdentifierMatch =
-      identifier.toLowerCase() === demoUser.email.toLowerCase() ||
-      (demoUser.phone && identifier === demoUser.phone) ||
-      identifier.toLowerCase().includes('demo') ||
-      identifier.toLowerCase().includes('test');
-
-    // For demo purposes, allow demo passwords or any password >= 6 characters
     if (password.length < 6) {
       throw new Error('Password must be at least 6 characters.');
     }
@@ -100,17 +113,64 @@ class AuthService {
       throw new Error('Invalid Administrative Security Token.');
     }
 
-    // Return authenticated user profile with simulated token
-    const authenticatedUser = {
-      ...(demoUser || {
-        id: `usr-${Date.now()}`,
-        name: identifier.split('@')[0],
-        email: identifier,
-        role,
-      }),
-      token: `mock_jwt_token_${Date.now()}`,
-      loginAt: new Date().toISOString(),
-    };
+    const cleanId = identifier.trim().toLowerCase();
+    const demoUser = DEMO_ACCOUNTS[role];
+
+    // 1. Check if user exists in the persistent registered user registry
+    const registeredUsers = getRegisteredUsers();
+    const foundUser = registeredUsers.find(
+      (u) =>
+        (u.email?.toLowerCase() === cleanId || u.phone === identifier.trim()) &&
+        (u.role === role || !u.role)
+    );
+
+    let authenticatedUser = null;
+
+    if (foundUser) {
+      // Use real registered profile data
+      authenticatedUser = {
+        ...foundUser,
+        role: foundUser.role || role,
+        token: `jwt_token_${Date.now()}`,
+        loginAt: new Date().toISOString(),
+      };
+    } else {
+      // 2. Check if explicitly logging in as the demo account
+      const isDemoExplicit =
+        cleanId === demoUser?.email?.toLowerCase() ||
+        identifier.trim() === demoUser?.phone ||
+        cleanId.includes('demo') ||
+        cleanId.includes('test');
+
+      if (isDemoExplicit && demoUser) {
+        authenticatedUser = {
+          ...demoUser,
+          token: `demo_jwt_token_${Date.now()}`,
+          loginAt: new Date().toISOString(),
+        };
+      } else {
+        // 3. New non-demo user logging in directly — derive their real name from identifier
+        const formattedName = identifier.includes('@')
+          ? identifier
+              .split('@')[0]
+              .replace(/[._-]/g, ' ')
+              .replace(/\b\w/g, (c) => c.toUpperCase())
+          : identifier;
+
+        authenticatedUser = {
+          id: `usr-${Date.now()}`,
+          name: formattedName,
+          email: identifier.includes('@') ? identifier.trim() : `${identifier.trim()}@kalakriti.in`,
+          phone: identifier.startsWith('+') || /^\d+$/.test(identifier) ? identifier.trim() : '',
+          role,
+          token: `jwt_token_${Date.now()}`,
+          loginAt: new Date().toISOString(),
+        };
+
+        // Persist to registry so future logins recall this exact profile
+        saveRegisteredUser(authenticatedUser);
+      }
+    }
 
     localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(authenticatedUser));
     return authenticatedUser;
@@ -118,10 +178,10 @@ class AuthService {
 
   /**
    * Register a new Customer or Artisan
-   * TODO: integrate with backend -> POST /api/v1/auth/register
+   * Persists to persistent user registry so name & details flow end-to-end
    */
   async register(userData) {
-    await simulateNetwork(600);
+    await simulateNetwork(500);
 
     const { name, email, phone, role = ROLES.CUSTOMER, password } = userData;
 
@@ -131,15 +191,17 @@ class AuthService {
 
     const newUser = {
       id: `usr-${Date.now()}`,
-      name,
-      email,
-      phone,
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
+      phone: phone?.trim() || '',
       role,
       ...userData,
-      token: `mock_jwt_token_${Date.now()}`,
+      token: `jwt_token_${Date.now()}`,
       loginAt: new Date().toISOString(),
     };
 
+    // Save to user registry AND active session
+    saveRegisteredUser(newUser);
     localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(newUser));
     return newUser;
   }
@@ -185,6 +247,23 @@ class AuthService {
       success: true,
       message: 'Your password has been reset successfully.',
     };
+  }
+
+  /**
+   * Update active user profile and persist changes to registry & session
+   */
+  updateUserProfile(updatedData) {
+    const currentUser = this.getCurrentUser();
+    if (!currentUser) return null;
+
+    const merged = {
+      ...currentUser,
+      ...updatedData,
+    };
+
+    saveRegisteredUser(merged);
+    localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(merged));
+    return merged;
   }
 }
 
