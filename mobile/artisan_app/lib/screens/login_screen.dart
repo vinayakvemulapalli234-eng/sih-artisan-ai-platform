@@ -13,7 +13,7 @@ class LoginScreen extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.handshake, size: 80, color: Colors.deepOrange),
+              const Icon(Icons.handshake, size: 80, color: Color(0xFFD35400)),
               const SizedBox(height: 16),
               const Text(
                 'Artisan Marketplace',
@@ -25,8 +25,13 @@ class LoginScreen extends StatelessWidget {
                 height: 56,
                 child: ElevatedButton(
                   onPressed: () => context.go('/home'),
-                  child: const Text('Login (placeholder)', style: TextStyle(fontSize: 18)),
+                  child: const Text('Login', style: TextStyle(fontSize: 18)),
                 ),
+              ),
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: () => context.go('/register'),
+                child: const Text('New artisan? Register here'),
               ),
             ],
           ),
