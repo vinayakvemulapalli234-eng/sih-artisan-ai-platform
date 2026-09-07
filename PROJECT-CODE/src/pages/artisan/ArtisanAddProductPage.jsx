@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import AIImageStudio from '@/components/domain/AIImageStudio';
 import {
   Camera,
   Mic,
@@ -46,6 +47,7 @@ const SAMPLE_PHOTOS = [
 ];
 
 export function ArtisanAddProductPage({ onBack, onNavigate }) {
+  const [studioOpen, setStudioOpen] = useState(false);
   const { addToast } = useToast();
 
   // Wizard Step: 1 to 7
@@ -120,7 +122,19 @@ export function ArtisanAddProductPage({ onBack, onNavigate }) {
     { num: 7, label: 'प्रकाशन', en: 'Publish' },
   ];
 
-  return (
+  
+
+    return (
+  <>
+    <button onClick={() => setStudioOpen(true)} style={{padding: '12px 20px', background: '#B5502E', color: 'white', borderRadius: '8px', border: 'none', fontWeight: 600, cursor: 'pointer'}}>
+      Add Product Photo
+    </button>
+    <AIImageStudio
+      isOpen={studioOpen}
+      onClose={() => setStudioOpen(false)}
+      onAccept={({ enhancedUrl }) => console.log('Enhanced photo ready:', enhancedUrl)}
+    />
+    <PageContainer></PageContainer>
     <PageContainer>
       {/* Top Bar with Back & Helper */}
       <div className="flex items-center justify-between gap-4 mb-4">
@@ -765,7 +779,8 @@ export function ArtisanAddProductPage({ onBack, onNavigate }) {
           </Card>
         )}
       </div>
-    </PageContainer>
+        </PageContainer>
+  </>
   );
 }
 
