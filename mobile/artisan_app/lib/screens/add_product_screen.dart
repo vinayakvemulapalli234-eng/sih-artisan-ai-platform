@@ -31,6 +31,17 @@ class _AddProductScreenState extends State<AddProductScreen> {
     }
   }
 
+  Future<void> _pickFromGallery() async {
+    final XFile? photo = await _picker.pickImage(source: ImageSource.gallery);
+    if (photo != null) {
+      final bytes = await photo.readAsBytes();
+      setState(() {
+        _photoBytes = bytes;
+        currentDraft.photoBytes = bytes;
+      });
+    }
+  }
+
   Future<void> _toggleRecording() async {
     if (_isRecording) {
       final path = await _recorder.stop();
@@ -81,6 +92,16 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 ),
               ),
             ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: OutlinedButton.icon(
+                onPressed: _pickFromGallery,
+                icon: const Icon(Icons.photo_library),
+                label: const Text('Choose from Gallery'),
+              ),
+            ),
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
@@ -107,7 +128,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
               width: double.infinity,
               height: 56,
               child: ElevatedButton(
-                onPressed: () => context.go('/pricing'),
+                onPressed: () => context.go('/description'),
                 child: const Text('Continue', style: TextStyle(fontSize: 18)),
               ),
             ),
