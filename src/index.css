@@ -1,0 +1,44 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-green-900: #064e3b;
+  --color-brand-green-800: #116530;
+  --color-brand-green-700: #15803d;
+  --color-brand-green-600: #166534;
+  --color-brand-green-500: #22c55e;
+  --color-brand-green-100: #dcfce7;
+  --color-brand-green-50: #f0fdf4;
+  
+  --color-brand-cream-50: #fffdfa;
+  --color-brand-cream-100: #faf7f2;
+  --color-brand-cream-200: #f4efe6;
+  --color-brand-cream-300: #e8ded0;
+  
+  --color-brand-terracotta: #c85a32;
+  --color-brand-amber: #d97706;
+}
+
+:root {
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background-color: #faf7f2;
+  color: #1f2937;
+}
+
+/* Custom Utilities for Mobile Feel */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+  70% { transform: scale(1.05); box-shadow: 0 0 0 15px rgba(34, 197, 94, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+}
+
+.mic-pulse {
+  animation: pulse-ring 2s infinite;
+}
