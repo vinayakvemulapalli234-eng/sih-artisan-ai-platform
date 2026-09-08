@@ -9,12 +9,6 @@ class HomeScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Products'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.person),
-            onPressed: () => context.go('/profile'),
-          ),
-        ],
       ),
       body: const Center(
         child: Text(

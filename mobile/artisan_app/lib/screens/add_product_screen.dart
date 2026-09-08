@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:record/record.dart';
+import '../models/product_draft.dart';
 
 class AddProductScreen extends StatefulWidget {
   const AddProductScreen({super.key});
@@ -25,6 +26,18 @@ class _AddProductScreenState extends State<AddProductScreen> {
       final bytes = await photo.readAsBytes();
       setState(() {
         _photoBytes = bytes;
+        currentDraft.photoBytes = bytes;
+      });
+    }
+  }
+
+  Future<void> _pickFromGallery() async {
+    final XFile? photo = await _picker.pickImage(source: ImageSource.gallery);
+    if (photo != null) {
+      final bytes = await photo.readAsBytes();
+      setState(() {
+        _photoBytes = bytes;
+        currentDraft.photoBytes = bytes;
       });
     }
   }
@@ -35,6 +48,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
       setState(() {
         _isRecording = false;
         _audioPath = path;
+        currentDraft.audioPath = path;
       });
     } else {
       if (await _recorder.hasPermission()) {
@@ -78,6 +92,16 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 ),
               ),
             ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: OutlinedButton.icon(
+                onPressed: _pickFromGallery,
+                icon: const Icon(Icons.photo_library),
+                label: const Text('Choose from Gallery'),
+              ),
+            ),
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
@@ -104,7 +128,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
               width: double.infinity,
               height: 56,
               child: ElevatedButton(
-                onPressed: () => context.go('/pricing'),
+                onPressed: () => context.go('/description'),
                 child: const Text('Continue', style: TextStyle(fontSize: 18)),
               ),
             ),

@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+<<<<<<< HEAD
 import '../services/pricing_api.dart';
+=======
+import '../models/product_draft.dart';
+>>>>>>> e0d33624b098ed206d22fe7307d0e5a7d7af153f
 
 class PricingScreen extends StatefulWidget {
   const PricingScreen({super.key});
@@ -73,6 +77,7 @@ class _PricingScreenState extends State<PricingScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+<<<<<<< HEAD
             Text(_errorMessage!, textAlign: TextAlign.center,
                 style: const TextStyle(color: Colors.red, fontSize: 16)),
             const SizedBox(height: 16),
@@ -119,6 +124,44 @@ class _PricingScreenState extends State<PricingScreen> {
                 onPressed: _fetchPrice,
                 child: const Text('Adjust'),
               ),
+=======
+            if (currentDraft.photoBytes != null)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.memory(currentDraft.photoBytes!, height: 150, fit: BoxFit.cover, width: double.infinity),
+              ),
+            if (currentDraft.photoBytes != null) const SizedBox(height: 16),
+            const Text('Suggested Range', style: TextStyle(fontSize: 16, color: Colors.grey)),
+            const Text('₹1,600 – ₹1,900',
+                style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 24),
+            const Text('Why this range?', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            _buildFactorRow('Material cost', '₹500'),
+            _buildFactorRow('Labor / craft effort', '₹700'),
+            _buildFactorRow('Market comparison (4 similar items)', '₹1,700'),
+            _buildFactorRow('Demand level', 'Medium'),
+            const Spacer(),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      currentDraft.priceRange = '₹1,600 – ₹1,900';
+                      context.go('/product-detail');
+                    },
+                    child: const Text('Accept'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () {},
+                    child: const Text('Adjust'),
+                  ),
+                ),
+              ],
+>>>>>>> e0d33624b098ed206d22fe7307d0e5a7d7af153f
             ),
           ],
         ),
