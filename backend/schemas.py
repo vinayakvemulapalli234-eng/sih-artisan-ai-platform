@@ -2,13 +2,17 @@ from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
 
+
 class UserCreate(BaseModel):
     name: str
-    email: str
+    email: Optional[str] = None
+    phone: Optional[str] = None
     password: str
 
+
 class UserLogin(BaseModel):
-    email: str
+    email: Optional[str] = None
+    phone: Optional[str] = None
     password: str
 
 
@@ -19,6 +23,7 @@ class ProductCreate(BaseModel):
     base_price: float
     image_url: Optional[str] = None
     language: Optional[str] = "en"
+
 
 class ProductResponse(BaseModel):
     id: int
@@ -38,6 +43,7 @@ class ProductResponse(BaseModel):
 class OrderCreate(BaseModel):
     product_id: int
     quantity: int = 1
+
 
 class OrderResponse(BaseModel):
     id: int

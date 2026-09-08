@@ -3,13 +3,18 @@ from sqlalchemy.orm import relationship
 from datetime import datetime
 from database import Base
 
+
 class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
-    email = Column(String, unique=True, index=True, nullable=False)
+
+    email = Column(String, unique=True, index=True, nullable=True)
+    phone = Column(String, unique=True, index=True, nullable=True)
+    
     hashed_password = Column(String, nullable=False)
+
     preferred_language = Column(String, default="en")
 
     products = relationship("Product", back_populates="owner")
@@ -23,9 +28,9 @@ class Product(Base):
     title = Column(String, nullable=False)
     description = Column(Text)
     category = Column(String)
-    base_price = Column(Float, nullable=False)       # artisan's set price
-    dynamic_price = Column(Float, nullable=True)      # filled in later by Group 3's pricing AI
-    image_url = Column(String, nullable=True)          # Cloudinary URL
+    base_price = Column(Float, nullable=False)
+    dynamic_price = Column(Float, nullable=True)
+    image_url = Column(String, nullable=True)
     language = Column(String, default="en")
     owner_id = Column(Integer, ForeignKey("users.id"))
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -42,7 +47,10 @@ class Order(Base):
     buyer_id = Column(Integer, ForeignKey("users.id"))
     quantity = Column(Integer, default=1)
     total_price = Column(Float, nullable=False)
-    status = Column(String, default="pending")  # pending, confirmed, shipped, delivered, cancelled
+    status = Column(
+        String,
+        default="pending"
+    )  # pending, confirmed, shipped, delivered, cancelled
     created_at = Column(DateTime, default=datetime.utcnow)
 
     product = relationship("Product", back_populates="orders")

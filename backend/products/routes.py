@@ -18,7 +18,15 @@ def get_db():
 @router.post("/", response_model=ProductResponse)
 def create_product(product: ProductCreate, db: Session = Depends(get_db),
                     current_user: str = Depends(get_current_user)):
-    owner = db.query(User).filter(User.email == current_user).first()
+    owner = db.query(User).filter(
+    (User.email == current_user) |
+    (User.phone == current_user)
+).first()
+    if not owner:
+     raise HTTPException(
+        status_code=401,
+        detail="User not found"
+    )
     new_product = Product(**product.dict(), owner_id=owner.id)
     db.add(new_product)
     db.commit()
