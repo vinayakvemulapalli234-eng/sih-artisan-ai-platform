@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Product Photo Studio — AI Enhancer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --indigo-deep:#212F4E;
+    --indigo-ink:#171F33;
+    --marigold:#E1A93B;
+    --marigold-soft:#F0CE8B;
+    --madder:#A23E33;
+    --ivory:#F6F1E4;
+    --ivory-dim:#EDE6D3;
+    --paper:#FBF8F1;
+    --ink:#211E19;
+    --ink-soft:#5B564C;
+    --line: rgba(33,30,25,0.12);
+    --shadow-soft: 0 20px 40px -20px rgba(23,31,51,0.35);
+    --radius-lg: 22px;
+    --radius-md: 14px;
+    --ff-display: 'Fraunces', serif;
+    --ff-body: 'Work Sans', sans-serif;
+  }
+
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--ff-body);
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.5;
+  }
+  ::selection{ background: var(--marigold-soft); }
+
+  a { color: inherit; }
+
+  .wrap{
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 0 20px 80px;
+  }
+
+  /* ---------- Header ---------- */
+  header.top{
+    padding: 28px 20px 0;
+    max-width: 760px;
+    margin: 0 auto;
+    display:flex;
+    align-items:center;
+    gap:12px;
+  }
+  .mark{
+    width: 34px; height:34px;
+    border-radius: 9px;
+    background: linear-gradient(155deg, var(--marigold), var(--madder));
+    flex-shrink:0;
+    position:relative;
+  }
+  .mark::after{
+    content:"";
+    position:absolute; inset:8px;
+    border: 2px solid var(--ivory);
+    border-radius:5px;
+  }
+  .brand{
+    font-family: var(--ff-display);
+    font-weight:600;
+    font-size:1.15rem;
+    letter-spacing: 0.01em;
+  }
+  .brand span{ color: var(--madder); }
+
+  /* ---------- Hero ---------- */
+  .hero{
+    padding: 46px 0 8px;
+    text-align:left;
+  }
+  .hero h1{
+    font-family: var(--ff-display);
+    font-weight: 600;
+    font-size: clamp(2rem, 5vw, 2.7rem);
+    line-height: 1.12;
+    letter-spacing: -0.01em;
+    margin: 0 0 16px;
+    max-width: 15ch;
+  }
+  .hero h1 em{
+    font-style: italic;
+    color: var(--madder);
+  }
+  .hero p{
+    font-size: 1.05rem;
+    color: var(--ink-soft);
+    max-width: 46ch;
+    margin: 0;
+  }
+
+  /* ---------- Studio card ---------- */
+  .studio{
+    margin-top: 40px;
+    background: var(--ivory);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    box-shadow: var(--shadow-soft);
+  }
+
+  .step-label{
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+    margin: 0 0 14px;
+  }
+  .step-label b{ color: var(--ink); }
+
+  /* Upload zone */
+  .dropzone{
+    border: 1.5px dashed rgba(33,30,25,0.28);
+    border-radius: var(--radius-md);
+    background: var(--paper);
+    padding: 28px 20px;
+    text-align:center;
+    transition: border-color .2s ease, background .2s ease;
+  }
+  .dropzone.drag{
+    border-color: var(--marigold);
+    background: var(--marigold-soft);
+  }
+  .dz-icon{
+    width:46px; height:46px;
+    margin: 0 auto 12px;
+    color: var(--indigo-deep);
+  }
+  .dz-title{
+    font-weight:600;
+    font-size: 1.02rem;
+    margin: 0 0 4px;
+  }
+  .dz-sub{
+    font-size: 0.88rem;
+    color: var(--ink-soft);
+    margin: 0 0 20px;
+  }
+
+  .upload-actions{
+    display:flex;
+    gap: 12px;
+    justify-content:center;
+    flex-wrap: wrap;
+  }
+
+  .btn{
+    appearance:none;
+    border:none;
+    font-family: var(--ff-body);
+    font-weight:600;
+    font-size: 0.96rem;
+    border-radius: 999px;
+    padding: 13px 22px;
+    cursor:pointer;
+    display:inline-flex;
+    align-items:center;
+    gap:9px;
+    transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+  }
+  .btn:active{ transform: scale(0.97); }
+  .btn svg{ width:18px; height:18px; flex-shrink:0; }
+
+  .btn-primary{
+    background: var(--indigo-deep);
+    color: var(--ivory);
+  }
+  .btn-primary:hover{ background: var(--indigo-ink); }
+  .btn-primary:disabled{
+    background: #B9BCC6;
+    cursor:not-allowed;
+    transform:none;
+  }
+
+  .btn-outline{
+    background: transparent;
+    color: var(--indigo-deep);
+    border: 1.5px solid rgba(33,47,78,0.3);
+  }
+  .btn-outline:hover{ border-color: var(--indigo-deep); }
+
+  .btn-accent{
+    background: var(--marigold);
+    color: var(--indigo-ink);
+  }
+  .btn-accent:hover{ background: #d49b28; }
+
+  input[type=file]{ display:none; }
+
+  /* Working area, shown once an image is chosen */
+  .workspace{ margin-top: 24px; display:none; }
+  .workspace.active{ display:block; }
+
+  .canvas-frame{
+    position:relative;
+    border-radius: var(--radius-md);
+    overflow:hidden;
+    background:
+      linear-gradient(45deg, #eee 25%, transparent 25%),
+      linear-gradient(-45deg, #eee 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #eee 75%),
+      linear-gradient(-45deg, transparent 75%, #eee 75%);
+    background-size: 20px 20px;
+    background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+    aspect-ratio: 1/1;
+    width: 100%;
+    max-width: 420px;
+    margin: 0 auto;
+    box-shadow: 0 0 0 1px var(--line);
+  }
+  .canvas-frame img, .canvas-frame canvas{
+    width:100%; height:100%;
+    object-fit: contain;
+    display:block;
+  }
+
+  .view-toggle{
+    display:flex;
+    justify-content:center;
+    gap: 6px;
+    margin: 16px 0 4px;
+  }
+  .toggle-btn{
+    border:none;
+    background: transparent;
+    padding: 7px 16px;
+    border-radius: 999px;
+    font-family: var(--ff-body);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--ink-soft);
+    cursor:pointer;
+  }
+  .toggle-btn.active{
+    background: var(--indigo-deep);
+    color: var(--ivory);
+  }
+
+  /* Backdrop swatches */
+  .backdrop-section{
+    margin-top: 26px;
+  }
+  .backdrop-section h3{
+    font-family: var(--ff-display);
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0 0 12px;
+  }
+  .swatches{
+    display:flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .swatch{
+    width: 52px; height: 52px;
+    border-radius: 12px;
+    cursor:pointer;
+    border: 2px solid transparent;
+    position:relative;
+    flex-shrink:0;
+  }
+  .swatch.selected{
+    border-color: var(--madder);
+  }
+  .swatch.selected::after{
+    content:"✓";
+    position:absolute;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color: #fff;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+    font-size: 1rem;
+    font-weight:700;
+  }
+  .swatch-label{
+    display:block;
+    font-size: 0.72rem;
+    text-align:center;
+    color: var(--ink-soft);
+    margin-top: 5px;
+    width: 52px;
+  }
+  .swatch-item{ text-align:center; }
+
+  /* Action row */
+  .action-row{
+    margin-top: 26px;
+    display:flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .action-row .btn{ flex:1; justify-content:center; min-width: 160px; }
+
+  /* Progress */
+  .progress-wrap{
+    margin-top: 20px;
+    display:none;
+  }
+  .progress-wrap.active{ display:block; }
+  .progress-label{
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    margin-bottom: 8px;
+    display:flex;
+    justify-content:space-between;
+  }
+  .progress-track{
+    height: 8px;
+    background: var(--ivory-dim);
+    border-radius: 999px;
+    overflow:hidden;
+  }
+  .progress-bar{
+    height:100%;
+    width: 6%;
+    background: linear-gradient(90deg, var(--marigold), var(--madder));
+    border-radius: 999px;
+    transition: width .25s ease;
+  }
+
+  .canvas-frame{ position:relative; }
+  .processing-veil{
+    position:absolute; inset:0;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    background: rgba(23,31,51,0.28);
+    backdrop-filter: blur(2px);
+  }
+  .processing-veil.active{ display:flex; }
+  .processing-spin{
+    width: 34px; height:34px;
+    border-radius:50%;
+    border: 3px solid rgba(246,241,228,0.35);
+    border-top-color: var(--marigold);
+    animation: spin 0.85s linear infinite;
+  }
+  @keyframes spin{ to{ transform: rotate(360deg); } }
+
+  .hint{
+    margin-top: 14px;
+    font-size: 0.82rem;
+    color: var(--ink-soft);
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px 14px;
+    display:none;
+  }
+  .hint.active{ display:block; }
+
+  footer.foot{
+    max-width: 760px;
+    margin: 44px auto 0;
+    padding: 0 20px;
+    font-size: 0.82rem;
+    color: var(--ink-soft);
+    text-align:center;
+  }
+
+  @media (max-width:520px){
+    .studio{ padding: 20px; }
+    .action-row .btn{ min-width: 100%; }
+  }
+
+  /* ---------- Camera modal ---------- */
+  .cam-overlay{
+    position:fixed; inset:0;
+    background: rgba(17,15,12,0.86);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index: 1000;
+    padding: 20px;
+  }
+  .cam-overlay.active{ display:flex; }
+  .cam-modal{
+    background: var(--indigo-ink);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    width: 100%;
+    max-width: 480px;
+    box-shadow: var(--shadow-soft);
+  }
+  .cam-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding: 4px 6px 14px;
+  }
+  .cam-title{
+    font-family: var(--ff-display);
+    color: var(--ivory);
+    font-size: 1.05rem;
+    font-weight:600;
+    margin:0;
+  }
+  .cam-close{
+    appearance:none;
+    border:none;
+    background: rgba(255,255,255,0.1);
+    color: var(--ivory);
+    width: 32px; height:32px;
+    border-radius:50%;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-shrink:0;
+  }
+  .cam-close:hover{ background: rgba(255,255,255,0.18); }
+  .cam-stage{
+    position:relative;
+    border-radius: var(--radius-md);
+    overflow:hidden;
+    background:#000;
+    aspect-ratio: 1/1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .cam-stage video{
+    width:100%; height:100%;
+    object-fit: cover;
+    display:block;
+    transform: scaleX(-1); /* mirror front camera feel */
+  }
+  .cam-stage.rear video{ transform:none; }
+  .cam-status{
+    color: var(--ivory);
+    font-size: 0.88rem;
+    text-align:center;
+    padding: 30px 20px;
+  }
+  .cam-status.error{ color: var(--marigold-soft); }
+  .cam-controls{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap: 10px;
+    margin-top: 16px;
+  }
+  .cam-switch{
+    appearance:none;
+    border:none;
+    background: rgba(255,255,255,0.1);
+    color: var(--ivory);
+    width: 44px; height:44px;
+    border-radius:50%;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-shrink:0;
+  }
+  .cam-switch:hover{ background: rgba(255,255,255,0.18); }
+  .cam-switch:disabled{ opacity:0.35; cursor:not-allowed; }
+  .cam-shutter{
+    appearance:none;
+    border: 3px solid var(--ivory);
+    background: transparent;
+    width: 62px; height:62px;
+    border-radius:50%;
+    cursor:pointer;
+    margin: 0 auto;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-shrink:0;
+  }
+  .cam-shutter::after{
+    content:"";
+    width:48px; height:48px;
+    border-radius:50%;
+    background: var(--marigold);
+    transition: transform .1s ease;
+  }
+  .cam-shutter:active::after{ transform: scale(0.88); }
+  .cam-shutter:disabled{ opacity:0.4; cursor:not-allowed; }
+  .cam-shutter:disabled::after{ background: #8a8a8a; }
+  .cam-spacer{ width:44px; height:44px; flex-shrink:0; }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="mark" aria-hidden="true"></div>
+  <div class="brand">Photo <span>Studio</span></div>
+</header>
+
+<div class="wrap">
+
+  <section class="hero">
+    <h1>Every craft deserves <em>a proper photograph.</em></h1>
+    <p>Take a picture of your product the way it is — on a table, on the floor, in any light. The studio lifts it out and sets it centre stage, ready for an online shop.</p>
+  </section>
+
+  <section class="studio">
+    <p class="step-label" id="stepLabel"><b>Step 1.</b> Add a photo of your product.</p>
+
+    <!-- Upload zone -->
+    <div class="dropzone" id="dropzone">
+      <svg class="dz-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="6" y="12" width="36" height="27" rx="4" stroke="currentColor" stroke-width="2.2"/>
+        <path d="M6 16L15 12H33L42 16" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
+        <circle cx="24" cy="26" r="7.5" stroke="currentColor" stroke-width="2.2"/>
+        <circle cx="24" cy="26" r="2.6" fill="currentColor"/>
+      </svg>
+      <p class="dz-title">Add your product photo</p>
+      <p class="dz-sub">Good light and a plain floor or table work best</p>
+      <div class="upload-actions">
+        <button class="btn btn-primary" id="btnCamera" type="button">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 011 1v9a1 1 0 01-1 1H4a1 1 0 01-1-1V9a1 1 0 011-1z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.4" stroke="currentColor" stroke-width="1.8"/></svg>
+          Take a photo
+        </button>
+        <button class="btn btn-outline" id="btnGallery" type="button">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3.5" y="4.5" width="17" height="15" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 15l4.5-4.5 3 3 4-4 5.5 5.5" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="8.2" cy="8.7" r="1.4" fill="currentColor"/></svg>
+          Choose from gallery
+        </button>
+      </div>
+      <input type="file" id="fileCamera" accept="image/*" capture="environment" aria-label="Take a photo of your product">
+      <input type="file" id="fileGallery" accept="image/*" aria-label="Choose a product photo from your gallery">
+    </div>
+
+    <!-- Workspace -->
+    <div class="workspace" id="workspace">
+
+      <div class="view-toggle" id="viewToggle" style="display:none;">
+        <button class="toggle-btn active" data-view="after" type="button">Studio photo</button>
+        <button class="toggle-btn" data-view="before" type="button">Original</button>
+      </div>
+
+      <div class="canvas-frame" id="canvasFrame">
+        <img id="previewImg" alt="Your uploaded product photo">
+        <canvas id="resultCanvas" style="display:none;"></canvas>
+        <div class="processing-veil" id="processingVeil"><div class="processing-spin"></div></div>
+      </div>
+
+      <div class="progress-wrap" id="progressWrap">
+        <div class="progress-label" role="status" aria-live="polite">
+          <span id="progressText">Preparing the AI studio…</span>
+          <span id="progressPct">0%</span>
+        </div>
+        <div class="progress-track"><div class="progress-bar" id="progressBar"></div></div>
+      </div>
+
+      <div class="backdrop-section" id="backdropSection" style="display:none;">
+        <h3>Studio backdrop</h3>
+        <div class="swatches" id="swatches"></div>
+      </div>
+
+      <div class="action-row">
+        <button class="btn btn-accent" id="btnEnhance" type="button">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6L12 3z" fill="currentColor"/><path d="M19 14l.8 2.2L22 17l-2.2.8L19 20l-.8-2.2L16 17l2.2-.8L19 14z" fill="currentColor"/></svg>
+          Enhance with AI
+        </button>
+        <button class="btn btn-outline" id="btnDownload" type="button" style="display:none;">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 4v11m0 0l-4-4m4 4l4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 18v1.5A1.5 1.5 0 005.5 21h13a1.5 1.5 0 001.5-1.5V18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          Save photo
+        </button>
+        <button class="btn btn-outline" id="btnReset" type="button">Start over</button>
+      </div>
+
+      <p class="hint" id="hint" role="status" aria-live="polite"></p>
+    </div>
+
+  </section>
+
+  <footer class="foot">
+    The background removal runs in your browser using an on-device AI model — your photo is never uploaded anywhere.
+  </footer>
+</div>
+
+<!-- Live camera modal -->
+<div class="cam-overlay" id="camOverlay" role="dialog" aria-modal="true" aria-label="Take a photo">
+  <div class="cam-modal">
+    <div class="cam-header">
+      <p class="cam-title">Take a photo</p>
+      <button class="cam-close" id="camClose" type="button" aria-label="Close camera">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 5l14 14M19 5L5 19" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div class="cam-stage" id="camStage">
+      <video id="camVideo" autoplay playsinline muted></video>
+      <p class="cam-status" id="camStatus">Asking for camera access…</p>
+    </div>
+    <canvas id="camCanvas" style="display:none;"></canvas>
+    <div class="cam-controls">
+      <button class="cam-switch" id="camSwitch" type="button" aria-label="Switch camera" disabled>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 9a8 8 0 0114-4.5M4 4.5V9h4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 15a8 8 0 01-14 4.5M20 19.5V15h-4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <button class="cam-shutter" id="camShutter" type="button" aria-label="Capture photo" disabled></button>
+      <div class="cam-spacer" aria-hidden="true"></div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { removeBackground as imglyRemoveBackground } from "https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/+esm";
+
+  const dropzone = document.getElementById('dropzone');
+  const fileCamera = document.getElementById('fileCamera');
+  const fileGallery = document.getElementById('fileGallery');
+  const btnCamera = document.getElementById('btnCamera');
+  const btnGallery = document.getElementById('btnGallery');
+  const workspace = document.getElementById('workspace');
+  const previewImg = document.getElementById('previewImg');
+  const resultCanvas = document.getElementById('resultCanvas');
+  const btnEnhance = document.getElementById('btnEnhance');
+  const btnDownload = document.getElementById('btnDownload');
+  const btnReset = document.getElementById('btnReset');
+  const progressWrap = document.getElementById('progressWrap');
+  const progressBar = document.getElementById('progressBar');
+  const progressText = document.getElementById('progressText');
+  const progressPct = document.getElementById('progressPct');
+  const processingVeil = document.getElementById('processingVeil');
+  const backdropSection = document.getElementById('backdropSection');
+  const swatchesEl = document.getElementById('swatches');
+  const viewToggle = document.getElementById('viewToggle');
+  const stepLabel = document.getElementById('stepLabel');
+  const hint = document.getElementById('hint');
+
+  const camOverlay = document.getElementById('camOverlay');
+  const camVideo = document.getElementById('camVideo');
+  const camStage = document.getElementById('camStage');
+  const camStatus = document.getElementById('camStatus');
+  const camCanvas = document.getElementById('camCanvas');
+  const camClose = document.getElementById('camClose');
+  const camSwitch = document.getElementById('camSwitch');
+  const camShutter = document.getElementById('camShutter');
+
+  const BACKDROPS = [
+    { id: 'ivory',  label: 'Cotton white', css: '#F7F4EC', kind: 'solid' },
+    { id: 'warm',   label: 'Warm ivory',   css: 'linear-gradient(160deg,#F4E9D2,#E9D3A6)', kind: 'gradient', flat:'#EFDFBB' },
+    { id: 'grey',   label: 'Soft grey',    css: 'linear-gradient(160deg,#EDEDEE,#D9D9DC)', kind: 'gradient', flat:'#E2E2E4' },
+    { id: 'indigo', label: 'Indigo dusk',  css: 'linear-gradient(160deg,#3A4B78,#1B2237)', kind: 'gradient', flat:'#2A3660' },
+  ];
+  let selectedBackdrop = BACKDROPS[0];
+
+  BACKDROPS.forEach((bd) => {
+    const item = document.createElement('div');
+    item.className = 'swatch-item';
+    const sw = document.createElement('div');
+    sw.className = 'swatch' + (bd.id === selectedBackdrop.id ? ' selected' : '');
+    sw.style.background = bd.css;
+    sw.dataset.id = bd.id;
+    sw.addEventListener('click', () => {
+      selectedBackdrop = bd;
+      document.querySelectorAll('.swatch').forEach(s => s.classList.remove('selected'));
+      sw.classList.add('selected');
+      if (cutoutImage) composite();
+    });
+    const label = document.createElement('span');
+    label.className = 'swatch-label';
+    label.textContent = bd.label;
+    item.appendChild(sw);
+    item.appendChild(label);
+    swatchesEl.appendChild(item);
+  });
+
+  let originalObjectUrl = null;
+  let cutoutImage = null; // HTMLImageElement of the transparent PNG
+  let currentView = 'after';
+
+  function showHint(msg){
+    hint.textContent = msg;
+    hint.classList.add('active');
+  }
+  function clearHint(){
+    hint.classList.remove('active');
+  }
+
+  function resetAll(){
+    workspace.classList.remove('active');
+    previewImg.src = '';
+    previewImg.style.display = 'block';
+    resultCanvas.style.display = 'none';
+    btnDownload.style.display = 'none';
+    viewToggle.style.display = 'none';
+    backdropSection.style.display = 'none';
+    progressWrap.classList.remove('active');
+    btnEnhance.style.display = 'inline-flex';
+    btnEnhance.disabled = false;
+    btnEnhance.textContent = '';
+    btnEnhance.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6L12 3z" fill="currentColor"/><path d="M19 14l.8 2.2L22 17l-2.2.8L19 20l-.8-2.2L16 17l2.2-.8L19 14z" fill="currentColor"/></svg>Enhance with AI';
+    stepLabel.innerHTML = '<b>Step 1.</b> Add a photo of your product.';
+    clearHint();
+    cutoutImage = null;
+    fileCamera.value = '';
+    fileGallery.value = '';
+  }
+
+  const MAX_FILE_BYTES = 20 * 1024 * 1024; // 20MB
+
+  function handleFile(file){
+    if (!file) return;
+    if (!file.type || !file.type.startsWith('image/')) {
+      showHint("That doesn't look like an image file. Please choose a JPG, PNG, or WEBP photo.");
+      return;
+    }
+    if (file.size > MAX_FILE_BYTES) {
+      showHint("That photo is quite large (over 20MB). Try a smaller file for best results.");
+      return;
+    }
+    if (originalObjectUrl) URL.revokeObjectURL(originalObjectUrl);
+    originalObjectUrl = URL.createObjectURL(file);
+    previewImg.src = originalObjectUrl;
+    previewImg.style.display = 'block';
+    resultCanvas.style.display = 'none';
+    workspace.classList.add('active');
+    cutoutImage = null;
+    btnDownload.style.display = 'none';
+    viewToggle.style.display = 'none';
+    backdropSection.style.display = 'none';
+    btnEnhance.style.display = 'inline-flex';
+    stepLabel.innerHTML = '<b>Step 2.</b> Ready — enhance it into a studio photo.';
+    clearHint();
+    workspace.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // ---------- Live camera capture ----------
+  let camStream = null;
+  let camDevices = [];
+  let camDeviceIndex = 0;
+  let camFacing = 'environment'; // preferred facing mode when device labels aren't available
+
+  function canUseLiveCamera(){
+    return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+  }
+
+  function setCamStatus(msg, isError){
+    camStatus.textContent = msg;
+    camStatus.style.display = msg ? 'block' : 'none';
+    camStatus.classList.toggle('error', !!isError);
+  }
+
+  async function listCamDevices(){
+    try {
+      const all = await navigator.mediaDevices.enumerateDevices();
+      camDevices = all.filter(d => d.kind === 'videoinput');
+    } catch {
+      camDevices = [];
+    }
+  }
+
+  async function startStream(constraints){
+    stopStream();
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    camStream = stream;
+    camVideo.srcObject = stream;
+    await camVideo.play().catch(() => {});
+    const track = stream.getVideoTracks()[0];
+    const settings = track && track.getSettings ? track.getSettings() : {};
+    camStage.classList.toggle('rear', settings.facingMode === 'environment');
+  }
+
+  function stopStream(){
+    if (camStream) {
+      camStream.getTracks().forEach(t => t.stop());
+      camStream = null;
+    }
+  }
+
+  async function openCamera(){
+    camOverlay.classList.add('active');
+    camShutter.disabled = true;
+    camSwitch.disabled = true;
+    setCamStatus('Asking for camera access…', false);
+    clearHint();
+
+    try {
+      // Prefer the back camera on phones; browsers ignore facingMode gracefully on desktop.
+      await startStream({ video: { facingMode: { ideal: camFacing } }, audio: false });
+      setCamStatus('', false);
+      camShutter.disabled = false;
+
+      await listCamDevices();
+      camDeviceIndex = camDevices.findIndex(d => {
+        const track = camStream.getVideoTracks()[0];
+        return track && d.deviceId === track.getSettings().deviceId;
+      });
+      if (camDeviceIndex < 0) camDeviceIndex = 0;
+      camSwitch.disabled = camDevices.length < 2;
+    } catch (err) {
+      console.error(err);
+      let msg = "Couldn't access your camera.";
+      if (err && err.name === 'NotAllowedError') {
+        msg = 'Camera access was blocked. Allow camera permission in your browser and try again, or choose a photo instead.';
+      } else if (err && err.name === 'NotFoundError') {
+        msg = 'No camera was found on this device. Choose a photo instead.';
+      }
+      setCamStatus(msg, true);
+      camShutter.disabled = true;
+      camSwitch.disabled = true;
+    }
+  }
+
+  function closeCamera(){
+    stopStream();
+    camOverlay.classList.remove('active');
+    camVideo.srcObject = null;
+  }
+
+  async function switchCamera(){
+    if (camDevices.length < 2) return;
+    camDeviceIndex = (camDeviceIndex + 1) % camDevices.length;
+    const nextDevice = camDevices[camDeviceIndex];
+    camShutter.disabled = true;
+    setCamStatus('Switching camera…', false);
+    try {
+      await startStream({ video: { deviceId: { exact: nextDevice.deviceId } }, audio: false });
+      setCamStatus('', false);
+    } catch (err) {
+      console.error(err);
+      setCamStatus("Couldn't switch camera.", true);
+    } finally {
+      camShutter.disabled = false;
+    }
+  }
+
+  function capturePhoto(){
+    if (!camStream) return;
+    const track = camStream.getVideoTracks()[0];
+    const settings = track && track.getSettings ? track.getSettings() : {};
+    const w = camVideo.videoWidth || settings.width || 1280;
+    const h = camVideo.videoHeight || settings.height || 1280;
+    camCanvas.width = w;
+    camCanvas.height = h;
+    const ctx = camCanvas.getContext('2d');
+    // Mirror the frame back to normal orientation if we mirrored the preview for a front camera.
+    if (!camStage.classList.contains('rear')) {
+      ctx.translate(w, 0);
+      ctx.scale(-1, 1);
+    }
+    ctx.drawImage(camVideo, 0, 0, w, h);
+    camCanvas.toBlob((blob) => {
+      if (!blob) return;
+      const file = new File([blob], `camera-photo-${Date.now()}.png`, { type: 'image/png' });
+      closeCamera();
+      handleFile(file);
+    }, 'image/png');
+  }
+
+  camClose.addEventListener('click', closeCamera);
+  camSwitch.addEventListener('click', switchCamera);
+  camShutter.addEventListener('click', capturePhoto);
+  camOverlay.addEventListener('click', (e) => { if (e.target === camOverlay) closeCamera(); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && camOverlay.classList.contains('active')) closeCamera();
+  });
+
+  btnCamera.addEventListener('click', () => {
+    if (canUseLiveCamera()) {
+      openCamera();
+    } else {
+      // No getUserMedia support (very old browser) — fall back to the native file picker,
+      // which on mobile still opens the device camera app via capture="environment".
+      fileCamera.click();
+    }
+  });
+  btnGallery.addEventListener('click', () => fileGallery.click());
+  fileCamera.addEventListener('change', (e) => handleFile(e.target.files[0]));
+  fileGallery.addEventListener('change', (e) => handleFile(e.target.files[0]));
+
+  ['dragenter','dragover'].forEach(evt =>
+    dropzone.addEventListener(evt, (e) => { e.preventDefault(); dropzone.classList.add('drag'); })
+  );
+  ['dragleave','drop'].forEach(evt =>
+    dropzone.addEventListener(evt, (e) => { e.preventDefault(); dropzone.classList.remove('drag'); })
+  );
+  dropzone.addEventListener('drop', (e) => {
+    const file = e.dataTransfer.files && e.dataTransfer.files[0];
+    if (file) handleFile(file);
+  });
+
+  function loadImage(src){
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = src;
+    });
+  }
+
+  // Modern phone photos can be 3000-4000px wide, which makes the on-device
+  // model slow (or crashes it on low-memory phones). Downscaling first keeps
+  // processing fast and reliable without hurting the final result, since the
+  // studio composite is only rendered at 1000x1000 anyway.
+  const MAX_PROCESS_DIM = 1600;
+
+  async function prepareForProcessing(objectUrl){
+    const img = await loadImage(objectUrl);
+    const longEdge = Math.max(img.naturalWidth, img.naturalHeight);
+    if (longEdge <= MAX_PROCESS_DIM) return objectUrl;
+
+    const scale = MAX_PROCESS_DIM / longEdge;
+    const w = Math.round(img.naturalWidth * scale);
+    const h = Math.round(img.naturalHeight * scale);
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    c.getContext('2d').drawImage(img, 0, 0, w, h);
+    const blob = await new Promise(res => c.toBlob(res, 'image/png'));
+    return URL.createObjectURL(blob);
+  }
+
+  async function removeBackgroundWithFallback(sourceUrl, onProgress){
+    // Try the higher-quality model first; if it fails (e.g. low-memory phone
+    // runs out of memory, or a flaky first-time model download), retry once
+    // with the lighter model instead of just failing outright.
+    const attempts = ['medium', 'small'];
+    let lastErr;
+    for (let i = 0; i < attempts.length; i++) {
+      try {
+        return await imglyRemoveBackground(sourceUrl, {
+          model: attempts[i],
+          output: { format: 'image/png', quality: 1 },
+          progress: onProgress
+        });
+      } catch (err) {
+        lastErr = err;
+        console.error(`background removal failed with model "${attempts[i]}"`, err);
+        if (i < attempts.length - 1) {
+          progressText.textContent = 'That took too much memory — trying a lighter mode…';
+        }
+      }
+    }
+    throw lastErr;
+  }
+
+  async function runEnhance(){
+    if (!originalObjectUrl) return;
+    btnEnhance.disabled = true;
+    progressWrap.classList.add('active');
+    processingVeil.classList.add('active');
+    progressText.textContent = 'Preparing your photo…';
+    progressBar.style.width = '4%';
+    progressPct.textContent = '0%';
+    clearHint();
+
+    try {
+      const processingUrl = await prepareForProcessing(originalObjectUrl);
+
+      const onProgress = (key, current, total) => {
+        const pct = total ? Math.min(100, Math.round((current / total) * 100)) : 0;
+        progressBar.style.width = Math.max(4, pct) + '%';
+        progressPct.textContent = pct + '%';
+        progressText.textContent = key && key.includes('fetch')
+          ? 'Downloading the AI model (first time only)…'
+          : 'Removing the background…';
+      };
+
+      const blob = await removeBackgroundWithFallback(processingUrl, onProgress);
+      const cutoutUrl = URL.createObjectURL(blob);
+      cutoutImage = await loadImage(cutoutUrl);
+
+      progressText.textContent = 'Setting the scene…';
+      progressBar.style.width = '100%';
+      progressPct.textContent = '100%';
+
+      composite();
+
+      previewImg.style.display = 'none';
+      resultCanvas.style.display = 'block';
+      btnDownload.style.display = 'inline-flex';
+      viewToggle.style.display = 'flex';
+      backdropSection.style.display = 'block';
+      btnEnhance.innerHTML = 'Re-run enhance';
+      btnEnhance.disabled = false;
+      stepLabel.innerHTML = '<b>Step 3.</b> Pick a backdrop, then save your photo.';
+
+      setTimeout(() => progressWrap.classList.remove('active'), 500);
+    } catch (err) {
+      console.error(err);
+      progressWrap.classList.remove('active');
+      btnEnhance.disabled = false;
+      showHint("The AI studio couldn't process that photo in this browser. Try a clearer, smaller photo, or a different browser (Chrome or Edge work best).");
+    } finally {
+      processingVeil.classList.remove('active');
+    }
+  }
+
+  function composite(){
+    if (!cutoutImage) return;
+    const size = 1000;
+    resultCanvas.width = size;
+    resultCanvas.height = size;
+    const ctx = resultCanvas.getContext('2d');
+
+    // Backdrop
+    if (selectedBackdrop.kind === 'solid') {
+      ctx.fillStyle = selectedBackdrop.css;
+      ctx.fillRect(0, 0, size, size);
+    } else {
+      const g = ctx.createLinearGradient(0, 0, size * 0.3, size);
+      const stops = selectedBackdrop.css.match(/#[0-9A-Fa-f]{6}/g);
+      g.addColorStop(0, stops[0]);
+      g.addColorStop(1, stops[1]);
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, size, size);
+    }
+
+    // Fit subject within a centred square, leaving modest breathing room
+    const maxDim = size * 0.82;
+    const iw = cutoutImage.naturalWidth, ih = cutoutImage.naturalHeight;
+    const scale = Math.min(maxDim / iw, maxDim / ih);
+    const dw = iw * scale, dh = ih * scale;
+    const dx = (size - dw) / 2;
+    const dy = (size - dh) / 2 + size * 0.015;
+
+    // Grounding shadow — soft and subtle, not heavy
+    ctx.save();
+    ctx.filter = 'blur(16px)';
+    ctx.fillStyle = 'rgba(20,18,14,0.18)';
+    ctx.beginPath();
+    ctx.ellipse(size/2, dy + dh - dh*0.02, dw*0.3, dh*0.045 + 6, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+
+    // Slight edge feather on the cutout to smooth jagged/aliased edges from the AI mask
+    ctx.save();
+    ctx.filter = 'blur(0.6px)';
+    ctx.drawImage(cutoutImage, dx, dy, dw, dh);
+    ctx.restore();
+  }
+
+  viewToggle.addEventListener('click', (e) => {
+    const btn = e.target.closest('.toggle-btn');
+    if (!btn) return;
+    document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentView = btn.dataset.view;
+    if (currentView === 'before') {
+      previewImg.style.display = 'block';
+      resultCanvas.style.display = 'none';
+    } else {
+      previewImg.style.display = 'none';
+      resultCanvas.style.display = 'block';
+    }
+  });
+
+  btnEnhance.addEventListener('click', runEnhance);
+  btnReset.addEventListener('click', resetAll);
+
+  btnDownload.addEventListener('click', () => {
+    resultCanvas.toBlob((blob) => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'studio-photo.png';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+    }, 'image/png');
+  });
+</script>
+
+</body>
+</html>
