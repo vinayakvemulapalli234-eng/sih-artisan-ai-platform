@@ -93,6 +93,7 @@ export const ProductDetailsModal = ({ product, isOpen, onClose }) => {
           </div>
 
           {/* Description & Story */}
+         {/* Description & Story */}
           <div className="space-y-2">
             <h4 className="text-xs font-extrabold uppercase tracking-wider text-stone-400">
               Craft Story & Materials
@@ -101,8 +102,8 @@ export const ProductDetailsModal = ({ product, isOpen, onClose }) => {
               {product.description}
             </p>
           </div>
-        </div>
-
+          </div>
+    
         {/* Bottom Pinned Action Bar */}
         <div className="p-4 bg-white border-t border-stone-200 flex gap-3 z-10">
           <button

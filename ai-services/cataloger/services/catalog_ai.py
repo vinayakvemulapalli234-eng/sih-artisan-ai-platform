@@ -1,12 +1,21 @@
-from groq import Groq
+﻿from groq import Groq
+from dotenv import load_dotenv
 import os, json
 
+load_dotenv()
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 def generate_catalog(description: str) -> dict:
     prompt = f"""
-You are helping an artisan list a handmade product on a marketplace.
+You are helping an Indian artisan list a handmade product on a marketplace.
+The description below was transcribed from spoken Indian-language input,
+so use common Indian handicraft/jewelry terminology (e.g. "bangle" not
+"bracelet", "anklet" not "ankle chain") wherever it fits better.
+
 Raw description: "{description}"
+
+Only mention a color if the description explicitly states one - do not
+invent or assume a color that wasn't mentioned.
 
 Return ONLY valid JSON with this exact structure:
 {{

@@ -1,19 +1,15 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { 
-  INITIAL_PRODUCTS, 
-  INITIAL_ARTISANS, 
-  INITIAL_ARTISAN_ORDERS, 
-  BULK_ORDER_DATA, 
-  INITIAL_NOTIFICATIONS 
+import { createProductOnServer } from '../services/productService';
+import {
+  INITIAL_ARTISAN_ORDERS,
+  BULK_ORDER_DATA,
+  INITIAL_NOTIFICATIONS
 } from '../data/mockData';
 
 const AppDataContext = createContext();
 
 export const AppDataProvider = ({ children }) => {
-  const [products, setProducts] = useState(() => {
-    const saved = localStorage.getItem('kalakriti_products');
-    return saved ? JSON.parse(saved) : INITIAL_PRODUCTS;
-  });
+  const [products, setProducts] = useState([]);
 
   const [artisanOrders, setArtisanOrders] = useState(() => {
     const saved = localStorage.getItem('kalakriti_artisan_orders');
@@ -37,34 +33,16 @@ export const AppDataProvider = ({ children }) => {
 
   const [favorites, setFavorites] = useState(() => {
     const saved = localStorage.getItem('kalakriti_favorites');
-    return saved ? JSON.parse(saved) : ['prod-1', 'prod-3'];
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [customerOrders, setCustomerOrders] = useState(() => {
     const saved = localStorage.getItem('kalakriti_customer_orders');
-    return saved ? JSON.parse(saved) : [
-      {
-        id: 'cust-ord-1',
-        orderNumber: 'KK-CUST-8812',
-        date: '2026-09-02',
-        items: [INITIAL_PRODUCTS[0]],
-        totalAmount: 3450,
-        status: 'In Production',
-        trackingSteps: [
-          { label: 'Order Placed', done: true, date: 'Sep 2' },
-          { label: 'Confirmed', done: true, date: 'Sep 2' },
-          { label: 'In Production', active: true, date: 'Sep 3' },
-          { label: 'Shipped', done: false },
-          { label: 'Delivered', done: false }
-        ]
-      }
-    ];
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [showBigOrderAlert, setShowBigOrderAlert] = useState(false);
 
-  // Sync state to local storage
-  useEffect(() => { localStorage.setItem('kalakriti_products', JSON.stringify(products)); }, [products]);
   useEffect(() => { localStorage.setItem('kalakriti_artisan_orders', JSON.stringify(artisanOrders)); }, [artisanOrders]);
   useEffect(() => { localStorage.setItem('kalakriti_bulk_order', JSON.stringify(bulkOrder)); }, [bulkOrder]);
   useEffect(() => { localStorage.setItem('kalakriti_notifications', JSON.stringify(notifications)); }, [notifications]);
@@ -72,18 +50,46 @@ export const AppDataProvider = ({ children }) => {
   useEffect(() => { localStorage.setItem('kalakriti_favorites', JSON.stringify(favorites)); }, [favorites]);
   useEffect(() => { localStorage.setItem('kalakriti_customer_orders', JSON.stringify(customerOrders)); }, [customerOrders]);
 
-  const addProduct = (newProd) => {
-    const created = {
-      id: 'prod-' + Date.now(),
-      ...newProd
+  const normalizeProduct = (p) => ({
+    id: p.id,
+    name: p.title,
+    description: p.description,
+    craft: p.category,
+    price: p.dynamic_price ?? p.base_price,
+    image: p.image_url,
+    materialCost: p.material_cost,
+    labourCost: p.labour_cost,
+    otherCost: p.other_cost,
+  });
+
+  const addProduct = async (newProd) => {
+    const payload = {
+      title: newProd.name,
+      description: newProd.description || '',
+      category: newProd.craft || '',
+      base_price: newProd.price,
+      material_cost: newProd.materialCost || null,
+      labour_cost: newProd.labourCost || null,
+      other_cost: newProd.otherCost || null,
+      image_url: newProd.image || '',
+      language: 'en'
     };
-    setProducts(prev => [created, ...prev]);
-    return created;
+
+    const result = await createProductOnServer(payload);
+    if (result.success) {
+      const normalized = normalizeProduct(result.product);
+      normalized.artisanLocation = newProd.artisanLocation || '';
+      setProducts(prev => [normalized, ...prev]);
+      return normalized;
+    } else {
+      console.error('addProduct failed:', result.error);
+      return null;
+    }
   };
 
   const toggleFavorite = (productId) => {
-    setFavorites(prev => 
-      prev.includes(productId) 
+    setFavorites(prev =>
+      prev.includes(productId)
         ? prev.filter(id => id !== productId)
         : [...prev, productId]
     );
@@ -93,7 +99,7 @@ export const AppDataProvider = ({ children }) => {
     setCart(prev => {
       const existing = prev.find(item => item.product.id === product.id);
       if (existing) {
-        return prev.map(item => 
+        return prev.map(item =>
           item.product.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
         );
       }
@@ -106,29 +112,6 @@ export const AppDataProvider = ({ children }) => {
   };
 
   const clearCart = () => setCart([]);
-
-  const placeCustomerOrder = () => {
-    if (cart.length === 0) return null;
-    const total = cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
-    const newOrder = {
-      id: 'cust-ord-' + Date.now(),
-      orderNumber: 'KK-CUST-' + Math.floor(1000 + Math.random() * 9000),
-      date: new Date().toISOString().split('T')[0],
-      items: cart.map(c => c.product),
-      totalAmount: total,
-      status: 'Order Placed',
-      trackingSteps: [
-        { label: 'Order Placed', active: true, date: 'Just now' },
-        { label: 'Confirmed', done: false },
-        { label: 'In Production', done: false },
-        { label: 'Shipped', done: false },
-        { label: 'Delivered', done: false }
-      ]
-    };
-    setCustomerOrders(prev => [newOrder, ...prev]);
-    clearCart();
-    return newOrder;
-  };
 
   const acceptBulkShare = (artisanId = 'art-1') => {
     setBulkOrder(prev => ({
@@ -155,9 +138,7 @@ export const AppDataProvider = ({ children }) => {
         addToCart,
         removeFromCart,
         clearCart,
-        placeCustomerOrder,
         acceptBulkShare,
-        artisans: INITIAL_ARTISANS
       }}
     >
       {children}

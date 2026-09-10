@@ -1,11 +1,40 @@
-import React from 'react';
-import { Package, CheckCircle2, Clock } from 'lucide-react';
-import { useAppData } from '../../context/AppDataContext';
-import { useLanguage } from '../../context/LanguageContext';
+import React, { useState, useEffect } from 'react';
+import { Package } from 'lucide-react';
+import { fetchMyOrders } from '../../services/productService';
+
+const STATUS_LABELS = {
+  pending: 'Pending',
+  confirmed: 'Confirmed',
+  shipped: 'Shipped',
+  delivered: 'Delivered',
+  cancelled: 'Cancelled',
+};
+
+const STATUS_COLORS = {
+  pending: 'bg-amber-100 text-amber-800',
+  confirmed: 'bg-blue-100 text-blue-800',
+  shipped: 'bg-purple-100 text-purple-800',
+  delivered: 'bg-emerald-100 text-emerald-800',
+  cancelled: 'bg-red-100 text-red-800',
+};
 
 export const CustomerOrders = () => {
-  const { customerOrders } = useAppData();
-  const { t } = useLanguage();
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const load = async () => {
+      const result = await fetchMyOrders();
+      if (result.success) {
+        setOrders(result.orders);
+      } else {
+        setError(result.error);
+      }
+      setLoading(false);
+    };
+    load();
+  }, []);
 
   return (
     <div className="flex-1 flex flex-col bg-[#FAF7F2] p-4 select-none">
@@ -14,75 +43,53 @@ export const CustomerOrders = () => {
         <span>My Orders</span>
       </h2>
 
+      {loading && (
+        <div className="py-16 text-center text-stone-400 font-semibold text-xs">
+          Loading your orders...
+        </div>
+      )}
+
+      {!loading && error && (
+        <div className="py-16 text-center text-red-500 font-semibold text-xs">
+          {error}
+        </div>
+      )}
+
+      {!loading && !error && orders.length === 0 && (
+        <div className="py-16 text-center text-stone-400 font-semibold text-xs">
+          You haven't placed any orders yet.
+        </div>
+      )}
+
+      {!loading && !error && orders.length > 0 && (
       <div className="space-y-4">
-        {customerOrders.map((ord) => (
+          {orders.map((ord) => (
           <div
             key={ord.id}
-            className="bg-white rounded-3xl p-5 border border-stone-200 shadow-md space-y-4"
+              className="bg-white rounded-3xl p-5 border border-stone-200 shadow-md space-y-3"
           >
             <div className="flex items-center justify-between border-b border-stone-100 pb-3">
               <div>
-                <span className="text-xs font-extrabold text-stone-900">{ord.orderNumber}</span>
-                <span className="text-[10px] text-stone-400 font-medium block">Placed on {ord.date}</span>
+                  <span className="text-xs font-extrabold text-stone-900">Order #{ord.id}</span>
+                  <span className="text-[10px] text-stone-400 font-medium block">
+                    Placed on {new Date(ord.created_at).toLocaleDateString()}
+                  </span>
               </div>
               <span className="text-sm font-extrabold text-emerald-800">
-                ₹{ord.totalAmount.toLocaleString()}
+                  ₹{ord.total_price.toLocaleString()}
               </span>
             </div>
 
-            {/* Items */}
-            <div className="space-y-2">
-              {ord.items.map((item, idx) => (
-                <div key={idx} className="flex items-center gap-3">
-                  <img src={item.image} alt={item.name} className="w-12 h-12 rounded-xl object-cover border border-stone-100" />
-                  <div>
-                    <h4 className="text-xs font-bold text-stone-900 line-clamp-1">{item.name}</h4>
-                    <span className="text-[10px] font-semibold text-stone-500">By {item.artisanName}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Visual Delivery Tracker: ✓ Order Placed → ✓ Confirmed → 🟢 In Production → ⚪ Shipped → ⚪ Delivered */}
-            <div className="pt-3 border-t border-stone-100">
-              <span className="text-[10px] font-extrabold uppercase tracking-wider text-stone-400 block mb-3">
-                Live Delivery Tracker
-              </span>
-
-              <div className="flex items-center justify-between relative px-2">
-                <div className="absolute top-3 left-4 right-4 h-1 bg-stone-200 -z-0"></div>
-                <div className="absolute top-3 left-4 w-2/3 h-1 bg-emerald-600 -z-0"></div>
-
-                {ord.trackingSteps.map((step, sIdx) => {
-                  const isDone = step.done || step.active;
-                  const isActive = step.active;
-
-                  return (
-                    <div key={sIdx} className="flex flex-col items-center z-10">
-                      <div
-                        className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold transition ${
-                          isActive
-                            ? 'bg-emerald-600 text-white ring-4 ring-emerald-100 scale-110'
-                            : isDone
-                            ? 'bg-emerald-700 text-white'
-                            : 'bg-stone-200 text-stone-500'
-                        }`}
-                      >
-                        {isDone ? '✓' : sIdx + 1}
-                      </div>
-                      <span className={`text-[9px] font-bold mt-1 max-w-[50px] text-center ${
-                        isActive ? 'text-emerald-800' : 'text-stone-500'
-                      }`}>
-                        {step.label}
+              <div className="flex items-center justify-between text-xs font-semibold text-stone-700">
+                <span>Product #{ord.product_id} × {ord.quantity}</span>
+                <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md ${STATUS_COLORS[ord.status] || 'bg-stone-100 text-stone-700'}`}>
+                  {STATUS_LABELS[ord.status] || ord.status}
                       </span>
                     </div>
-                  );
-                })}
-              </div>
-            </div>
           </div>
         ))}
       </div>
+      )}
     </div>
   );
 };

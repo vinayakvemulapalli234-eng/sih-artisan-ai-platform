@@ -1,23 +1,47 @@
 import React, { useState } from 'react';
-import { ChevronLeft, Lock, Phone, ArrowRight } from 'lucide-react';
+import { ChevronLeft, Lock, Phone, User, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 
 export const AuthModal = () => {
-  const { role, setCurrentStep, loginWithPin } = useAuth();
+  const { role, setCurrentStep, registerUser, loginUser } = useAuth();
   const { t } = useLanguage();
 
   const [mode, setMode] = useState('login'); // 'login' | 'register'
-  const [identifier, setIdentifier] = useState('9876543210');
+  const [name, setName] = useState('');
+  
   const [pin, setPin] = useState('');
+  const [identifier, setIdentifier] = useState('');const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+
     if (pin.length < 4) {
-      alert("Please enter a 4-digit PIN");
+      setError("Please enter a 4-digit PIN");
       return;
     }
-    loginWithPin(identifier, pin);
+    if (mode === 'register' && !name.trim()) {
+      setError("Please enter your name");
+      return;
+    }
+
+    setLoading(true);
+    let result;
+    if (mode === 'register') {
+  result = await registerUser(name, identifier, pin);
+  if (result.success) {
+    result = await loginUser(identifier, pin);
+  }
+} else {
+  result = await loginUser(identifier, pin);
+}
+    setLoading(false);
+
+    if (!result.success) {
+      setError(result.error);
+    }
   };
 
   const handlePinClick = (num) => {
@@ -46,10 +70,10 @@ export const AuthModal = () => {
         </div>
 
         <h2 className="text-2xl font-extrabold text-stone-900 tracking-tight">
-          {mode === 'login' ? 'Welcome Back' : 'Create Account'}
+          {mode === 'login' ? t('welcome_back') : t('create_account')}
         </h2>
         <p className="text-xs text-stone-500 font-medium mt-1">
-          {mode === 'login' ? 'Enter your registered phone & 4-digit PIN' : 'Quick register with phone & 4-digit PIN'}
+          {mode === 'login' ? t('login_sub') : t('register_sub')}
         </p>
 
         {/* Auth Mode Switcher Tabs */}
@@ -60,23 +84,41 @@ export const AuthModal = () => {
               mode === 'login' ? 'bg-white text-emerald-800 shadow-xs' : 'text-stone-600'
             }`}
           >
-            Login
+            {t('login_tab')}
           </button>
           <button
-            onClick={() => setMode('register')}
+            onClick={() => { setMode('register'); setError(''); }}
             className={`flex-1 py-2 text-xs font-bold rounded-lg transition ${
               mode === 'register' ? 'bg-white text-emerald-800 shadow-xs' : 'text-stone-600'
             }`}
           >
-            Register
+            {t('register_tab')}
           </button>
         </div>
 
         {/* Input Form */}
         <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+          {mode === 'register' && (
+            <div>
+              <label className="block text-xs font-bold text-stone-700 mb-1.5">
+                {t('full_name')}
+              </label>
+              <div className="relative">
+                <User size={18} className="absolute left-3.5 top-3 text-stone-400" />
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 bg-white border border-stone-300 rounded-xl text-sm font-semibold text-stone-900 focus:outline-none focus:border-emerald-600"
+                  placeholder={t('full_name_placeholder')}
+                />
+              </div>
+            </div>
+          )}
+
           <div>
             <label className="block text-xs font-bold text-stone-700 mb-1.5">
-              Mobile Number / Email
+              {t('mobile_email')}
             </label>
             <div className="relative">
               <Phone size={18} className="absolute left-3.5 top-3 text-stone-400" />
@@ -85,14 +127,14 @@ export const AuthModal = () => {
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
                 className="w-full pl-10 pr-4 py-2.5 bg-white border border-stone-300 rounded-xl text-sm font-semibold text-stone-900 focus:outline-none focus:border-emerald-600"
-                placeholder="Enter mobile number"
+                placeholder={t('mobile_placeholder')}
               />
             </div>
           </div>
 
           <div>
             <label className="block text-xs font-bold text-stone-700 mb-1.5">
-              4-Digit PIN
+              {t('pin_label')}
             </label>
             {/* PIN Display */}
             <div className="flex justify-center gap-3 my-2">
@@ -110,6 +152,10 @@ export const AuthModal = () => {
               ))}
             </div>
           </div>
+
+          {error && (
+            <p className="text-xs font-bold text-red-600 text-center">{error}</p>
+          )}
         </form>
 
         {/* Keypad for low-literacy friction-free PIN entry */}
@@ -127,7 +173,7 @@ export const AuthModal = () => {
             onClick={handlePinDelete}
             className="py-3 bg-stone-100 border border-stone-200 rounded-2xl text-xs font-bold text-stone-600 hover:bg-stone-200 active:scale-95 transition"
           >
-            Delete
+            {t('delete_btn')}
           </button>
           <button
             onClick={() => handlePinClick('0')}
@@ -139,7 +185,7 @@ export const AuthModal = () => {
             onClick={() => setPin('')}
             className="py-3 bg-stone-100 border border-stone-200 rounded-2xl text-xs font-bold text-stone-600 hover:bg-stone-200 active:scale-95 transition"
           >
-            Clear
+            {t('clear_btn')}
           </button>
         </div>
       </div>
@@ -147,9 +193,10 @@ export const AuthModal = () => {
       <div className="pt-4 pb-2">
         <button
           onClick={handleSubmit}
-          className="w-full py-4 bg-emerald-700 hover:bg-emerald-800 active:scale-[0.99] text-white rounded-2xl font-bold text-base shadow-lg shadow-emerald-700/20 flex items-center justify-center gap-2 transition"
+          disabled={loading}
+          className="w-full py-4 bg-emerald-700 hover:bg-emerald-800 active:scale-[0.99] text-white rounded-2xl font-bold text-base shadow-lg shadow-emerald-700/20 flex items-center justify-center gap-2 transition disabled:opacity-60"
         >
-          <span>{mode === 'login' ? 'Login' : 'Complete Registration'}</span>
+          <span>{loading ? 'Please wait...' : (mode === 'login' ? 'Login' : 'Complete Registration')}</span>
           <ArrowRight size={20} />
         </button>
       </div>

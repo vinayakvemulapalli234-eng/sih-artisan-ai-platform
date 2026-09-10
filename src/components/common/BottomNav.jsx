@@ -49,7 +49,8 @@ export const BottomNav = ({ activeTab, setActiveTab }) => {
     { id: 'explore', label: t('nav_explore'), icon: Compass },
     { id: 'artisans', label: t('nav_artisans'), icon: Users },
     { id: 'favorites', label: t('nav_favorites'), icon: Heart },
-    { id: 'cart', label: t('nav_cart'), icon: ShoppingCart, badge: cartItemsCount }
+    { id: 'cart', label: t('nav_cart'), icon: ShoppingCart, badge: cartItemsCount },
+    { id: 'profile', label: t('nav_me'), icon: User }
   ];
 
   return (

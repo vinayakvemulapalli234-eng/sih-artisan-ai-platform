@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Camera, Package, Mic, ChevronRight, Sparkles, HelpCircle, Settings, User, TrendingUp } from 'lucide-react';
+import { Camera, Package, Mic, ChevronRight, Sparkles, HelpCircle, Settings, User, TrendingUp, ArrowLeft } from 'lucide-react';
 import { HeaderBar } from '../common/HeaderBar';
 import { BottomNav } from '../common/BottomNav';
 import { AddProductStepper } from './AddProductStepper';
@@ -7,25 +7,69 @@ import { ArtisanOrders } from './ArtisanOrders';
 import { VoiceAssistantModal } from './VoiceAssistantModal';
 import { BigOrderAlertModal } from './BigOrderAlertModal';
 import { NotificationsView } from './NotificationsView';
+import { MyProducts } from './MyProducts';
+import { fetchMyProducts, fetchMyStats } from '../../services/productService';
 import { BulkOrderTracker } from '../admin/BulkOrderTracker';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAppData } from '../../context/AppDataContext';
 
+const getCraftSpecialty = (products) => {
+  if (!products || products.length === 0) return null;
+  const counts = {};
+  products.forEach(p => {
+    const cat = p.category || 'Handmade Crafts';
+    counts[cat] = (counts[cat] || 0) + 1;
+  });
+  let topCategory = products[0].category || 'Handmade Crafts';
+  let maxCount = 0;
+  for (const cat in counts) {
+    if (counts[cat] > maxCount) {
+      maxCount = counts[cat];
+      topCategory = cat;
+    }
+  }
+  return topCategory;
+};
+
 export const ArtisanHome = () => {
   const { user, logout } = useAuth();
   const { t } = useLanguage();
-  const { products, showBigOrderAlert, setShowBigOrderAlert, acceptBulkShare } = useAppData();
+  const { showBigOrderAlert, setShowBigOrderAlert, acceptBulkShare } = useAppData();
 
   const [activeTab, setActiveTab] = useState('home');
-  const [currentView, setCurrentView] = useState('dashboard'); // 'dashboard' | 'add_product' | 'notifications' | 'bulk_tracker'
+  const [myProductsCount, setMyProductsCount] = useState(0);
+  const [stats, setStats] = useState({ total_revenue: 0, items_sold: 0 });
+  const [myProductsList, setMyProductsList] = useState([]);
+
+  React.useEffect(() => {
+    const loadCount = async () => {
+      const result = await fetchMyProducts();
+      if (result.success) {
+        setMyProductsCount(result.products.length);
+        setMyProductsList(result.products);
+      }
+    };
+
+    const loadStats = async () => {
+      const result = await fetchMyStats();
+      if (result.success) {
+        setStats(result.stats);
+      }
+    };
+
+    loadCount();
+    loadStats();
+  }, [activeTab]);
+
+  const [currentView, setCurrentView] = useState('dashboard'); // 'dashboard' | 'add_product' | 'notifications' | 'bulk_tracker' | 'profile_details'
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
 
   const handleActionClick = (action) => {
     if (action === 'add_product') {
       setCurrentView('add_product');
     } else if (action === 'my_products') {
-      setActiveTab('orders');
+      setActiveTab('products');
     } else if (action === 'speak_app') {
       setIsVoiceModalOpen(true);
     }
@@ -56,6 +100,51 @@ export const ArtisanHome = () => {
           />
         ) : currentView === 'bulk_tracker' ? (
           <BulkOrderTracker onBack={() => setCurrentView('dashboard')} />
+        ) : currentView === 'profile_details' ? (
+          <div className="flex-1 flex flex-col bg-[#FAF7F2]">
+            <div className="bg-white border-b border-stone-200 px-4 py-3 flex items-center gap-3 sticky top-0 z-10">
+              <button
+                onClick={() => setCurrentView('dashboard')}
+                className="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center text-stone-600 hover:bg-stone-200"
+              >
+                <ArrowLeft size={18} />
+              </button>
+              <h2 className="text-base font-extrabold text-stone-900">{t('profile_details_title')}</h2>
+            </div>
+
+            <div className="p-4 space-y-4">
+              <div className="bg-white rounded-3xl p-5 border border-stone-200 shadow-md flex items-center gap-4">
+                <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center text-2xl font-extrabold shrink-0 border-2 border-emerald-300">
+                  {user?.name?.charAt(0) || 'A'}
+                </div>
+                <div>
+                  <h3 className="text-lg font-extrabold text-stone-900">{user?.name || 'Artisan'}</h3>
+                  <p className="text-xs font-semibold text-stone-500">{user?.identifier || ''}</p>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-3xl border border-stone-200 shadow-md divide-y divide-stone-100 text-sm">
+                <div className="p-4 flex items-center justify-between">
+                  <span className="text-stone-500 font-semibold">{t('full_name_label')}</span>
+                  <span className="font-extrabold text-stone-900">{user?.name || '—'}</span>
+                </div>
+                <div className="p-4 flex items-center justify-between">
+                  <span className="text-stone-500 font-semibold">{t('phone_email_label')}</span>
+                  <span className="font-extrabold text-stone-900">{user?.identifier || '—'}</span>
+                </div>
+                <div className="p-4 flex items-center justify-between">
+                  <span className="text-stone-500 font-semibold">{t('craft_specialty_label')}</span>
+                  <span className="font-extrabold text-stone-900">
+                    {getCraftSpecialty(myProductsList) || t('no_products_yet')}
+                  </span>
+                </div>
+                <div className="p-4 flex items-center justify-between">
+                  <span className="text-stone-500 font-semibold">{t('total_products_label')}</span>
+                  <span className="font-extrabold text-emerald-800">{myProductsCount}</span>
+                </div>
+              </div>
+            </div>
+          </div>
         ) : (
           /* TAB ROUTING */
           <div className="flex-1 flex flex-col">
@@ -65,7 +154,7 @@ export const ArtisanHome = () => {
                 <div className="bg-emerald-800 text-white rounded-3xl p-5 shadow-xl relative overflow-hidden flex items-center justify-between">
                   <div className="max-w-[210px] z-10">
                     <span className="text-[10px] font-bold tracking-widest text-emerald-200 uppercase block mb-1">
-                      Welcome, {user?.name || 'Govindappa V.'}
+                     Welcome, {user?.name || 'Artisan'}
                     </span>
                     <h2 className="text-xl font-extrabold leading-tight">
                       {t('grow_business')}
@@ -86,9 +175,9 @@ export const ArtisanHome = () => {
                     <span className="w-3 h-3 rounded-full bg-white animate-ping"></span>
                     <div>
                       <span className="text-xs font-extrabold uppercase tracking-wider block text-amber-100">
-                        New Order Opportunity
+                        {t('new_order_title')}
                       </span>
-                      <span className="text-sm font-extrabold">500 Wooden Toys Request</span>
+                      <span className="text-sm font-extrabold">{t('new_order_desc')}</span>
                     </div>
                   </div>
                   <ChevronRight size={20} />
@@ -128,7 +217,7 @@ export const ArtisanHome = () => {
                       </div>
                       <div className="text-left">
                         <h3 className="text-base font-extrabold text-stone-900 group-hover:text-emerald-800">
-                          {t('my_products')} ({products.length})
+                          {t('my_products')} ({myProductsCount})
                         </h3>
                         <p className="text-xs font-semibold text-stone-500 mt-0.5">
                           {t('my_products_sub')}
@@ -164,6 +253,7 @@ export const ArtisanHome = () => {
 
             {activeTab === 'orders' && <ArtisanOrders initialTab="active" />}
             {activeTab === 'requests' && <ArtisanOrders initialTab="requests" />}
+            {activeTab === 'products' && <MyProducts />}
 
             {/* "ME" TAB: Contains Profile, Earnings, Inventory, Help & Settings */}
             {activeTab === 'me' && (
@@ -173,27 +263,27 @@ export const ArtisanHome = () => {
                     👨‍🌾
                   </div>
                   <div>
-                    <h3 className="text-lg font-extrabold text-stone-900">Govindappa V.</h3>
-                    <p className="text-xs font-semibold text-stone-500">Master Artisan • Andhra Pradesh</p>
-                    <span className="inline-block text-[10px] font-bold px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-md mt-1">
-                      Kondapalli Craft Specialist
-                    </span>
+                    <h3 className="text-lg font-extrabold text-stone-900">{user?.name || 'Artisan'}</h3>
+                    <p className="text-xs font-semibold text-stone-500">Artisan • {user?.identifier || 'Andhra Pradesh'}</p>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="p-4 bg-white rounded-2xl border border-stone-200 shadow-sm text-center">
                     <span className="text-stone-400 text-xs font-bold block">Total Revenue</span>
-                    <span className="text-xl font-extrabold text-emerald-800 mt-1 block">₹42,500</span>
+                    <span className="text-xl font-extrabold text-emerald-800 mt-1 block">₹{stats.total_revenue.toLocaleString()}</span>
                   </div>
                   <div className="p-4 bg-white rounded-2xl border border-stone-200 shadow-sm text-center">
                     <span className="text-stone-400 text-xs font-bold block">Items Sold</span>
-                    <span className="text-xl font-extrabold text-stone-900 mt-1 block">142 pcs</span>
+                    <span className="text-xl font-extrabold text-stone-900 mt-1 block">{stats.items_sold} pcs</span>
                   </div>
                 </div>
 
                 <div className="bg-white rounded-3xl border border-stone-200 shadow-md divide-y divide-stone-100 text-xs font-bold text-stone-700">
-                  <div className="p-4 flex items-center justify-between cursor-pointer hover:bg-stone-50">
+                  <div
+                    onClick={() => setCurrentView('profile_details')}
+                    className="p-4 flex items-center justify-between cursor-pointer hover:bg-stone-50"
+                  >
                     <span className="flex items-center gap-3"><User size={18} className="text-emerald-700" /> Artisan Profile Details</span>
                     <ChevronRight size={18} className="text-stone-400" />
                   </div>
@@ -224,7 +314,7 @@ export const ArtisanHome = () => {
       </div>
 
       {/* Bottom Navigation */}
-      {currentView === 'dashboard' && (
+      {(currentView === 'dashboard') && (
         <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
       )}
 

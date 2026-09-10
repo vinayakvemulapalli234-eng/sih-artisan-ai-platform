@@ -49,24 +49,25 @@ export const ProductListedSuccess = ({ product, onViewProduct, onAddAnother }) =
           </div>
 
           <h3 className="text-sm font-bold text-stone-900 line-clamp-1">
-            {product.name || 'Kondapalli Wooden Toys'}
+  {product.name}
           </h3>
-
           <div className="text-lg font-extrabold text-emerald-800 mt-1">
-            ₹{product.price || 650}
+  ₹{product.price}
           </div>
 
+      
           {/* Craft/Region Pill Tags */}
           <div className="flex flex-wrap gap-1.5 mt-2">
-            <span className="text-[10px] font-bold px-2 py-0.5 bg-amber-100 text-amber-900 rounded-md">
-              Handmade
-            </span>
+  {product.craft && (
             <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-100 text-emerald-900 rounded-md">
-              {product.craft || 'Kondapalli'}
+      {product.craft}
             </span>
+  )}
+    {product.artisanLocation && (
             <span className="text-[10px] font-bold px-2 py-0.5 bg-stone-100 text-stone-700 rounded-md">
-              {product.artisanLocation || 'Andhra Pradesh'}
+      {product.artisanLocation}
             </span>
+  )}
           </div>
         </div>
       </div>

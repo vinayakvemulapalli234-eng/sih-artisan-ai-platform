@@ -1,25 +1,42 @@
 import React, { useState } from 'react';
 import { ShoppingCart, Trash2, Plus, Minus, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { useAppData } from '../../context/AppDataContext';
+import { placeOrderOnServer } from '../../services/productService';
 import { useVoice } from '../../context/VoiceContext';
 import { useLanguage } from '../../context/LanguageContext';
 
 export const CartView = ({ onOrderPlaced }) => {
-  const { cart, removeFromCart, placeCustomerOrder } = useAppData();
+  const { cart, removeFromCart, clearCart } = useAppData();
   const { speakPrompt } = useVoice();
   const { t } = useLanguage();
   const [isOrdered, setIsOrdered] = useState(false);
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+const [orderError, setOrderError] = useState('');
 
   const totalAmount = cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
 
-  const handleCheckout = () => {
-    const orderObj = placeCustomerOrder();
-    if (orderObj) {
+  const handleCheckout = async () => {
+    setIsPlacingOrder(true);
+    setOrderError('');
+
+    // Place each cart item as a separate real order on the backend
+    const results = await Promise.all(
+      cart.map(item => placeOrderOnServer(item.product.id, item.quantity))
+    );
+
+    const allSucceeded = results.every(r => r.success);
+    setIsPlacingOrder(false);
+
+    if (allSucceeded) {
+      clearCart(); // clear cart — see note below, may need per-item clearing
       setIsOrdered(true);
       speakPrompt("Order placed successfully! Track your handicraft delivery in My Orders.");
       setTimeout(() => {
         if (onOrderPlaced) onOrderPlaced();
       }, 2000);
+    } else {
+      const firstError = results.find(r => !r.success);
+      setOrderError(firstError?.error || 'Some items could not be ordered. Please try again.');
     }
   };
 
@@ -104,13 +121,19 @@ export const CartView = ({ onOrderPlaced }) => {
 
       {cart.length > 0 && (
         <div className="pt-4 pb-2">
+          <>
+            {orderError && (
+              <p className="text-xs font-bold text-red-600 text-center mb-2">{orderError}</p>
+            )}
           <button
             onClick={handleCheckout}
-            className="w-full py-4 bg-emerald-700 hover:bg-emerald-800 text-white rounded-2xl font-bold text-base shadow-lg shadow-emerald-700/20 flex items-center justify-center gap-2 transition"
+              disabled={isPlacingOrder}
+              className="w-full py-4 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-60 text-white rounded-2xl font-bold text-base shadow-lg shadow-emerald-700/20 flex items-center justify-center gap-2 transition"
           >
-            <span>Proceed to Checkout (₹{totalAmount.toLocaleString()})</span>
-            <ArrowRight size={20} />
+              <span>{isPlacingOrder ? 'Placing order...' : `Proceed to Checkout (₹${totalAmount.toLocaleString()})`}</span>
+              {!isPlacingOrder && <ArrowRight size={20} />}
           </button>
+          </>
         </div>
       )}
     </div>

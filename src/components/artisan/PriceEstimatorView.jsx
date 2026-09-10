@@ -17,6 +17,7 @@ export const PriceEstimatorView = ({ formData, onConfirmPrice, onBack }) => {
     materialCost: formData.materialCost || 250,
     workersCount: formData.workersCount || 1,
     workingDays: formData.workingDays || 1,
+    labourCost: formData.labourCost,
     state: selectedState,
     craftCategory: formData.craft || 'Wooden Toys / Kondapalli'
   });

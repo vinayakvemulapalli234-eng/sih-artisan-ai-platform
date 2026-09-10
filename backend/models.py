@@ -36,6 +36,9 @@ class Product(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     owner = relationship("User", back_populates="products")
+    @property
+    def owner_name(self):
+        return self.owner.name if self.owner else None
     orders = relationship("Order", back_populates="product")
 
 

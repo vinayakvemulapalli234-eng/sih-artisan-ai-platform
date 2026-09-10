@@ -15,23 +15,29 @@ def get_db():
     finally:
         db.close()
 
+def get_owner(current_user: str, db: Session):
+    owner = db.query(User).filter(
+        (User.email == current_user) | (User.phone == current_user)
+    ).first()
+    if not owner:
+        raise HTTPException(status_code=401, detail="User not found")
+    return owner
+
 @router.post("/", response_model=ProductResponse)
 def create_product(product: ProductCreate, db: Session = Depends(get_db),
                     current_user: str = Depends(get_current_user)):
-    owner = db.query(User).filter(
-    (User.email == current_user) |
-    (User.phone == current_user)
-).first()
-    if not owner:
-     raise HTTPException(
-        status_code=401,
-        detail="User not found"
-    )
+    owner = get_owner(current_user, db)
     new_product = Product(**product.dict(), owner_id=owner.id)
     db.add(new_product)
     db.commit()
     db.refresh(new_product)
     return new_product
+
+@router.get("/mine", response_model=List[ProductResponse])
+def list_my_products(db: Session = Depends(get_db),
+                      current_user: str = Depends(get_current_user)):
+    owner = get_owner(current_user, db)
+    return db.query(Product).filter(Product.owner_id == owner.id).all()
 
 @router.get("/", response_model=List[ProductResponse])
 def list_products(db: Session = Depends(get_db)):
@@ -65,3 +71,20 @@ def delete_product(product_id: int, db: Session = Depends(get_db),
     db.delete(product)
     db.commit()
     return {"message": "Product deleted"}
+@router.get("/sellers/list")
+def list_sellers(db: Session = Depends(get_db)):
+    sellers = (
+        db.query(User)
+        .join(Product, Product.owner_id == User.id)
+        .distinct()
+        .all()
+    )
+    return [
+        {
+            "id": s.id,
+            "name": s.name,
+            "phone": s.phone,
+            "email": s.email,
+        }
+        for s in sellers
+    ]

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Camera, Mic, Volume2, Sparkles, ChevronRight, Check, ArrowLeft, RefreshCw } from 'lucide-react';
+import { Camera, Mic, Volume2, Sparkles, ChevronRight, Check, ArrowLeft, Loader2 } from 'lucide-react';
 import { enhanceProductImage } from '../../services/imageEnhancerService';
+import { generateCatalogFromText, generateCatalogFromAudio } from '../../services/catalogerService';
 import { PriceEstimatorView } from './PriceEstimatorView';
 import { ProductListedSuccess } from './ProductListedSuccess';
 import { useVoice } from '../../context/VoiceContext';
@@ -9,38 +10,44 @@ import { useAppData } from '../../context/AppDataContext';
 
 export const AddProductStepper = ({ onComplete, onCancel }) => {
   const { speakPrompt, startListening, isListening } = useVoice();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { addProduct } = useAppData();
 
-  const [step, setStep] = useState(1); // 1: Photo, 2: Details, 3: Price, 4: Done
+  const [step, setStep] = useState(1); // 1: Photo+Voice, 2: Details, 3: Price, 4: Done
 
-  // Form State
-  const [photoSrc, setPhotoSrc] = useState('https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=800&q=80');
+  // Photo State
+  const [photoSrc, setPhotoSrc] = useState(null);
   const [enhancedPhoto, setEnhancedPhoto] = useState(null);
   const [showEnhancementComparison, setShowEnhancementComparison] = useState(false);
   const [isEnhancing, setIsEnhancing] = useState(false);
 
+  // Voice Description State
+  const [voiceTranscript, setVoiceTranscript] = useState('');
+  const [isGeneratingCatalog, setIsGeneratingCatalog] = useState(false);
+  const [catalogResult, setCatalogResult] = useState(null); // { title, description, category, tags }
+  const [catalogError, setCatalogError] = useState('');
+
   const [guidedStepIndex, setGuidedStepIndex] = useState(0);
   const [formData, setFormData] = useState({
-    name: 'Kondapalli Wooden Toy Set',
-    craft: 'Wooden Toys / Kondapalli',
-    material: 'Tella Poniki Softwood & Natural Dyes',
-    materialCost: 250,
-    workersCount: 1,
-    workingDays: 2,
-    labourCost: 400,
-    state: 'Andhra Pradesh',
-    price: 650
+    name: '',
+    craft: '',
+    material: '',
+    materialCost: '',
+    workersCount: '',
+    workingDays: '',
+    labourCost: '',
+    state: '',
+    price: ''
   });
 
   const [createdProduct, setCreatedProduct] = useState(null);
 
   const guidedQuestions = [
-    { key: 'material', question: "What material did you use?", defaultVal: "Tella Poniki Softwood & Natural Dyes" },
-    { key: 'materialCost', question: "How much did the material cost? (in ₹)", defaultVal: 250 },
-    { key: 'workersCount', question: "How many workers helped you?", defaultVal: 1 },
-    { key: 'workingDays', question: "How many days did you work?", defaultVal: 2 },
-    { key: 'labourCost', question: "What is your estimated labour cost? (in ₹)", defaultVal: 400 }
+    { key: 'material', question: t('q_material') },
+    { key: 'materialCost', question: t('q_material_cost') },
+    { key: 'workersCount', question: t('q_workers') },
+    { key: 'workingDays', question: t('q_working_days') },
+    { key: 'labourCost', question: t('q_labour_cost') }
   ];
 
   // Photo Upload & AI Enhancement
@@ -65,11 +72,55 @@ export const AddProductStepper = ({ onComplete, onCancel }) => {
 
   const handleApplyEnhancement = () => {
     setShowEnhancementComparison(false);
-    speakPrompt("Photo enhanced! Advancing to product details.");
-    setStep(2);
+    speakPrompt("Photo enhanced! Now describe your product using the mic below.");
   };
 
-  // Voice Guided Q&A
+  // Voice Description -> AI Catalog Generation
+const handleRecordDescription = async () => {
+    setCatalogError('');
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      const chunks = [];
+
+      mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+
+      mediaRecorder.onstop = async () => {
+        stream.getTracks().forEach(track => track.stop());
+        const audioBlob = new Blob(chunks, { type: 'audio/webm' });
+
+        setIsGeneratingCatalog(true);
+        const result = await generateCatalogFromAudio(audioBlob, 'te');
+        setIsGeneratingCatalog(false);
+
+        if (result.success) {
+          setVoiceTranscript(result.transcription);
+          setCatalogResult(result.catalog);
+          setFormData(prev => ({
+            ...prev,
+            name: result.catalog.title,
+            craft: result.catalog.category,
+          }));
+          speakPrompt("Description ready! You can now proceed to product details.");
+        } else {
+          setCatalogError(result.error || 'Could not generate description');
+        }
+      };
+
+      mediaRecorder.start();
+      speakPrompt("Recording... speak now.");
+
+      setTimeout(() => {
+        if (mediaRecorder.state === 'recording') mediaRecorder.stop();
+      }, 6000);
+    } catch (err) {
+      setCatalogError('Microphone access denied or unavailable.');
+    }
+  };
+
+  const canProceedFromStep1 = photoSrc && catalogResult;
+
+  // Voice Guided Q&A (Step 2)
   const handleStartGuidedVoice = () => {
     const qObj = guidedQuestions[guidedStepIndex];
     speakPrompt(qObj.question, () => {
@@ -90,28 +141,35 @@ export const AddProductStepper = ({ onComplete, onCancel }) => {
     }
   };
 
-  const handleConfirmPrice = (finalPrice, estimateData) => {
+  const handleConfirmPrice = async (finalPrice, estimateData) => {
     const finalProduct = {
       name: formData.name,
-      artisanName: 'Govindappa V.',
+      artisanName: 'Artisan',
       artisanId: 'art-1',
-      artisanLocation: formData.state || 'Andhra Pradesh',
+      artisanLocation: formData.state || '',
       craft: formData.craft,
-      tags: ['Handmade', 'Kondapalli', formData.state || 'Andhra Pradesh'],
+      tags: catalogResult?.tags || [],
       price: finalPrice,
+      materialCost: estimateData.materialCost,
+      labourCost: estimateData.labourCost,
+      otherCost: estimateData.logisticsAndPlatformFee,
       originalPrice: Math.round(finalPrice * 1.2),
       discountPercent: 17,
       rating: 5.0,
-      reviewsCount: 1,
+      reviewsCount: 0,
       image: enhancedPhoto || photoSrc,
-      description: `Authentic handcrafted ${formData.craft} made with ${formData.material}.`,
+      description: catalogResult?.description || '',
       material: formData.material,
       inStock: true
     };
 
-    const saved = addProduct(finalProduct);
+    const saved = await addProduct(finalProduct);
+    if (saved) {
     setCreatedProduct(saved);
     setStep(4);
+    } else {
+      alert('Failed to save product. Please try again.');
+    }
   };
 
   return (
@@ -120,7 +178,13 @@ export const AddProductStepper = ({ onComplete, onCancel }) => {
       <div className="bg-white border-b border-stone-200 px-4 py-3 sticky top-0 z-20 shadow-2xs">
         <div className="flex items-center justify-between mb-3">
           <button
-            onClick={onCancel}
+            onClick={() => {
+              if (step === 1) {
+                onCancel();
+              } else {
+                setStep(step - 1);
+              }
+            }}
             className="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center text-stone-600 hover:bg-stone-200"
           >
             <ArrowLeft size={18} />
@@ -134,10 +198,10 @@ export const AddProductStepper = ({ onComplete, onCancel }) => {
         {/* 4-Step Visual Stepper Bar */}
         <div className="grid grid-cols-4 gap-1.5 text-center text-[10px] font-extrabold">
           {[
-            { num: 1, label: '1 Photo' },
-            { num: 2, label: '2 Details' },
-            { num: 3, label: '3 Price' },
-            { num: 4, label: '4 Done' }
+            { num: 1, label: `1 ${t('step1_label')}` },
+{ num: 2, label: `2 ${t('step2_label')}` },
+{ num: 3, label: `3 ${t('step3_label')}` },
+{ num: 4, label: `4 ${t('step4_label')}` }
           ].map(s => (
             <div key={s.num} className="flex flex-col items-center gap-1">
               <div
@@ -153,13 +217,13 @@ export const AddProductStepper = ({ onComplete, onCancel }) => {
         </div>
       </div>
 
-      {/* STEP 1: PHOTO UPLOAD & AI ENHANCEMENT */}
+      {/* STEP 1: PHOTO + VOICE DESCRIPTION (both required) */}
       {step === 1 && (
         <div className="flex-1 p-5 flex flex-col justify-between">
           <div>
-            <h3 className="text-xl font-extrabold text-stone-900">Step 1: Take a Photo</h3>
+            <h3 className="text-xl font-extrabold text-stone-900">{t('step1_title')}</h3>
             <p className="text-xs text-stone-500 font-medium mt-0.5">
-              Capture or upload your product image
+  {t('step1_subtitle')}
             </p>
 
             {/* Photo Box */}
@@ -171,7 +235,7 @@ export const AddProductStepper = ({ onComplete, onCancel }) => {
                   <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center">
                     <Camera size={28} />
                   </div>
-                  <span className="text-xs font-bold text-stone-700">Take a photo of your product</span>
+                  <span className="text-xs font-bold text-stone-700">{t('take_photo_prompt')}</span>
                 </div>
               )}
               <input
@@ -210,47 +274,67 @@ export const AddProductStepper = ({ onComplete, onCancel }) => {
               </div>
             )}
 
-            {/* Or Speak to add product */}
-            <div className="mt-4 flex flex-col items-center gap-3">
-              <span className="text-xs text-stone-400 font-bold uppercase tracking-widest">or</span>
-
+            {/* Voice Description Section */}
+            {photoSrc && !showEnhancementComparison && (
+              <div className="mt-5">
               <button
-                onClick={() => {
-                  speakPrompt("Speak your product name, for example: wooden toy elephant", () => {
-                    startListening((txt) => {
-                      setFormData(prev => ({ ...prev, name: txt }));
-                      setStep(2);
-                    });
-                  });
-                }}
-                className={`w-full py-4 bg-emerald-700 hover:bg-emerald-800 text-white rounded-2xl font-bold text-sm shadow-md flex items-center justify-center gap-2 ${
+                  onClick={handleRecordDescription}
+                  disabled={isGeneratingCatalog}
+                  className={`w-full py-4 bg-emerald-700 hover:bg-emerald-800 text-white rounded-2xl font-bold text-sm shadow-md flex items-center justify-center gap-2 disabled:opacity-60 ${
                   isListening ? 'mic-pulse' : ''
                 }`}
               >
+                  {isGeneratingCatalog ? (
+                    <>
+                      <Loader2 size={20} className="animate-spin" />
+                      <span>Generating description...</span>
+                    </>
+                  ) : (
+                    <>
                 <Mic size={20} />
-                <span>🎤 Speak to add product</span>
+                      <span>Describe your product by voice</span>
+                    </>
+                  )}
               </button>
-            </div>
 
-            {/* Tip Callout */}
-            <div className="mt-5 p-3.5 bg-amber-50 border border-amber-200 rounded-2xl flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-xl shrink-0">
-                👩‍🌾
+                {catalogError && (
+                  <p className="text-xs font-bold text-red-600 mt-2 text-center">{catalogError}</p>
+                )}
+
+                {catalogResult && (
+                  <div className="mt-4 p-4 bg-white border-2 border-emerald-600/30 rounded-2xl">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">
+                      AI Generated
+                    </span>
+                    <h4 className="text-base font-extrabold text-stone-900 mt-1">
+                      {catalogResult.translations?.[language]?.title || catalogResult.title}
+                    </h4>
+                    <p className="text-xs text-stone-600 font-medium mt-1">
+                      {catalogResult.translations?.[language]?.description || catalogResult.description}
+                    </p>
+                    <span className="inline-block mt-2 text-[10px] font-bold px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-md">
+                      {catalogResult.category}
+                    </span>
+                  </div>
+                )}
               </div>
-              <p className="text-xs font-semibold text-amber-900">
-                Tip: You can also say "Add wooden toy" directly to the voice mic!
-              </p>
-            </div>
+            )}
           </div>
 
           <div className="pt-4 pb-2">
             <button
               onClick={() => setStep(2)}
-              className="w-full py-4 bg-emerald-700 hover:bg-emerald-800 text-white rounded-2xl font-bold text-base shadow-lg flex items-center justify-center gap-2"
+              disabled={!canProceedFromStep1}
+              className="w-full py-4 bg-emerald-700 hover:bg-emerald-800 disabled:bg-stone-300 disabled:cursor-not-allowed text-white rounded-2xl font-bold text-base shadow-lg flex items-center justify-center gap-2"
             >
-              <span>Next: Product Details</span>
+              <span>{t('step2_title')}</span>
               <ChevronRight size={20} />
             </button>
+            {!canProceedFromStep1 && (
+              <p className="text-[10px] text-stone-400 font-semibold text-center mt-2">
+                {t('continue_hint')}
+              </p>
+            )}
           </div>
         </div>
       )}
@@ -259,10 +343,17 @@ export const AddProductStepper = ({ onComplete, onCancel }) => {
       {step === 2 && (
         <div className="flex-1 p-5 flex flex-col justify-between">
           <div>
-            <h3 className="text-xl font-extrabold text-stone-900">Step 2: Product Details</h3>
+            <h3 className="text-xl font-extrabold text-stone-900">{t('step2_title')}</h3>
             <p className="text-xs text-stone-500 font-medium mt-0.5">
-              Answer 1-at-a-time guided questions (Voice or Type)
-            </p>
+  {t('step2_subtitle')}
+</p>
+
+            {/* Generated product summary */}
+            <div className="mt-4 p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">Product</span>
+              <h4 className="text-sm font-extrabold text-stone-900">{formData.name}</h4>
+              <span className="text-[10px] font-bold text-stone-500">{formData.craft}</span>
+            </div>
 
             {/* Guided Question Card */}
             <div className="mt-5 bg-white border-2 border-emerald-600/30 rounded-3xl p-5 shadow-lg relative">
@@ -291,7 +382,16 @@ export const AddProductStepper = ({ onComplete, onCancel }) => {
                 placeholder="Speak or type answer..."
               />
             </div>
-
+            <div className="mt-4">
+  <label className="text-xs font-bold text-stone-500 block mb-1">Your State</label>
+  <input
+    type="text"
+    value={formData.state}
+    onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+    className="w-full p-3 bg-stone-50 border border-stone-300 rounded-xl text-sm font-bold text-stone-900 focus:outline-none focus:border-emerald-600"
+    placeholder="e.g. Andhra Pradesh"
+  />
+</div>
             {/* Recognized Summary Card */}
             <div className="mt-5 p-4 bg-stone-100 rounded-2xl space-y-2 text-xs font-semibold text-stone-700">
               <div className="text-[10px] uppercase font-bold text-stone-400">Captured Details:</div>
@@ -307,7 +407,7 @@ export const AddProductStepper = ({ onComplete, onCancel }) => {
               onClick={handleNextGuidedQuestion}
               className="w-full py-4 bg-emerald-700 hover:bg-emerald-800 text-white rounded-2xl font-bold text-base shadow-lg flex items-center justify-center gap-2"
             >
-              <span>{guidedStepIndex < guidedQuestions.length - 1 ? 'Next Question' : 'Confirm & Calculate Price'}</span>
+              <span>{guidedStepIndex < guidedQuestions.length - 1 ? t('next_question') : t('confirm_calculate_price')}</span>
               <ChevronRight size={20} />
             </button>
           </div>
@@ -331,6 +431,10 @@ export const AddProductStepper = ({ onComplete, onCancel }) => {
           onAddAnother={() => {
             setStep(1);
             setGuidedStepIndex(0);
+            setPhotoSrc(null);
+            setEnhancedPhoto(null);
+            setCatalogResult(null);
+            setVoiceTranscript('');
           }}
         />
       )}
